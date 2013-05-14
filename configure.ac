@@ -17,6 +17,8 @@ AC_LANG([C++])
 AC_PROG_CPP
 
 # Checks for libraries.
+AX_BOOST_BASE
+PKG_CHECK_MODULES([libthrift], [thrift])
 
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h sys/time.h unistd.h])

@@ -6,26 +6,26 @@
  * Copyright 2013 (c) Lei Xu <eddyxu@gmail.com>
  */
 
-#ifndef VSFS_PERF_HBASE_HBASE_DRIVER_H_
-#define VSFS_PERF_HBASE_HBASE_DRIVER_H_
+#ifndef VSBENCH_HBASE_HBASE_DRIVER_H_
+#define VSBENCH_HBASE_HBASE_DRIVER_H_
 
 #include <memory>
 #include <string>
 #include <vector>
 #include "vobla/status.h"
-#include "vsfs/client/rpc_client.h"
-#include "vsfs/perf/driver.h"
-#include "vsfs/perf/hbase/hbase/Hbase.h"
+#include "vsfs/rpc/rpc_client.h"
+#include "vsbench/driver.h"
+#include "hbase/hbase/Hbase.h"
 
 using std::string;
 using std::unique_ptr;
 using std::vector;
 
 namespace vsfs {
-
 using client::RPCClient;
+}
 
-namespace perf {
+namespace vsbench {
 
 /**
  * \brief Hbase Driver.
@@ -86,10 +86,6 @@ class HbaseDriver : public Driver {
   unique_ptr<HbaseClient> hbase_;
 };
 
-class OneTableHbaseDriver : public HbaseDriver {
-};
+}  // namespace vsbench
 
-}  // namespace perf
-}  // namespace vsfs
-
-#endif  // VSFS_PERF_HBASE_HBASE_DRIVER_H_
+#endif  // VSBENCH_HBASE_HBASE_DRIVER_H_

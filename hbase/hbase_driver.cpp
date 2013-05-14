@@ -20,8 +20,8 @@
 #include "vobla/traits.h"
 #include "vsfs/common/complex_query.h"
 #include "vsfs/common/hash_util.h"
-#include "vsfs/perf/hbase/hbase/Hbase.h"
-#include "vsfs/perf/hbase/hbase_driver.h"
+#include "hbase/hbase/Hbase.h"
+#include "hbase/hbase_driver.h"
 
 using apache::hadoop::hbase::thrift::BatchMutation;
 using apache::hadoop::hbase::thrift::ColumnDescriptor;
@@ -263,7 +263,7 @@ Status HbaseDriver::search_in_index_table(
     vector<string> file_id_texts;
     try {
       hbase_->handler()->scannerGet(results, scanner_id);
-    } catch (apache::hadoop::hbase::thrift::IOError e) {
+    } catch (apache::hadoop::hbase::thrift::IOError e) { // NOLINT
       LOG(ERROR) << "Scanner error: " << e.message;
     }
     if (results.empty()) {

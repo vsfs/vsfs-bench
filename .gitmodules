@@ -1,6 +1,8 @@
 [submodule "lib/vobla"]
 	path = lib/vobla
 	url = git://github.com/vsfs/vobla.git
+	ignore = dirty
 [submodule "lib/vsfs"]
 	path = lib/vsfs
 	url = git@github.com:eddyxu/vsfs.git
+	ignore = dirty
