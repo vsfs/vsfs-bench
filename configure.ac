@@ -19,6 +19,7 @@ AC_PROG_CPP
 # Checks for libraries.
 AX_BOOST_BASE
 PKG_CHECK_MODULES([libthrift], [thrift])
+AC_CHECK_LIB([glog], [openlog], [], [AC_MSG_ERROR(google-glog was not found.)])
 
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h sys/time.h unistd.h])
