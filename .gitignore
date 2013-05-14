@@ -25,3 +25,11 @@ pip-log.txt
 nosetests.xml
 
 *.o
+Makefile
+Makefile.in
+*.a
+.deps
+*.swp
+hbase/hbase-*
+hbase/hadoop-*
+hbase/hbase

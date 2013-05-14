@@ -36,6 +36,5 @@ AC_FUNC_ERROR_AT_LINE
 
 AC_CONFIG_FILES([Makefile
                  apps/mvd/Makefile
-                 hbase/Makefile
-                 mysql/Makefile])
+                 hbase/Makefile])
 AC_OUTPUT
