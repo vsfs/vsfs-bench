@@ -1,9 +1,20 @@
-/**
- * \file vsbench.cpp
- *
- * \brief VSFS Benchmark.
- *
+/*
  * Copyright 2013 (c) Lei Xu <eddyxu@gmail.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * \brief VSFS Benchmark.
  */
 
 #include <boost/algorithm/string.hpp>
@@ -23,10 +34,10 @@
 #include "vobla/thread_pool.h"
 #include "vobla/timer.h"
 #include "vobla/traits.h"
+#include "vsbench/driver.h"
+#include "vsbench/util.h"
 #include "vsfs/common/complex_query.h"
 #include "vsfs/index/index_info.h"
-#include "vsfs/perf/driver.h"
-#include "vsfs/perf/util.h"
 
 DEFINE_string(driver, "", "Sets the test driver (hbase/mysql/voltdb/vsfs)");
 DEFINE_string(indices, "", "Sets the indices to operate on, e.g., "
@@ -58,10 +69,7 @@ unsigned int seed;
 int mpi_rank;
 int mpi_size;
 
-using namespace vsfs::perf;  // NOLINT
-
-namespace vsfs {
-namespace perf {
+namespace vsbench {
 
 /**
  * \brief Parses the index string to a vector of int.
@@ -406,8 +414,7 @@ void test_open_search() {
   }
 }
 
-}  // namespace perf
-}  // namespace vsfs
+}  // namespace vsbench
 
 int main(int argc, char* argv[]) {
   google::SetUsageMessage("Usage: ./vsbench [options] -op "

@@ -1,9 +1,17 @@
-/**
- * \file driver.cpp
- *
- * \brief Implementation of Driver
- *
+/*
  * Copyright 2013 (c) Lei Xu <eddyxu@gmail.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include <boost/filesystem.hpp>
@@ -11,7 +19,7 @@
 #include <glog/logging.h>
 #include <algorithm>
 #include <string>
-#include "driver.h"
+#include "vsbench/driver.h"
 #include "hbase/hbase_driver.h"
 #include "mysql/mysql_driver.h"
 #include "vsfs/vsfs_driver.h"
@@ -19,8 +27,7 @@
 using std::string;
 namespace fs = boost::filesystem;
 
-namespace vsfs {
-namespace perf {
+namespace vsbench {
 
 Driver* Driver::create_driver(const string &name) {
   if (name == "hbase") {
