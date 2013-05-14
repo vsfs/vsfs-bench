@@ -15,7 +15,6 @@
  */
 
 #include <boost/filesystem.hpp>
-#include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
 #include <algorithm>
 #include <string>
@@ -60,5 +59,5 @@ void Driver::reorder_records(const RecordVector& records,
   }
 }
 
-}  // namespace perf
+}  // namespace vsbench
 }  // namespace vsfs
