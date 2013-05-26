@@ -4,5 +4,5 @@
 	ignore = dirty
 [submodule "lib/vsfs"]
 	path = lib/vsfs
-	url = git@github.com:eddyxu/vsfs.git
+	url = git://github.com/vsfs/vsfs.git
 	ignore = dirty
