@@ -21,8 +21,8 @@ import fablib
 
 SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
 VERSION = '0.94.7'
-HADOOP_URL = 'http://www.trieuvan.com/apache/hadoop/common/hadoop-1.0.4/' + \
-             'hadoop-1.0.4.tar.gz'
+HADOOP_URL = 'http://www.trieuvan.com/apache/hadoop/common/stable/' + \
+             'hadoop-1.1.2.tar.gz'
 
 HBASE_URL = ("http://mirror.reverse.net/pub/apache/hbase/hbase-%s/" +
              "hbase-%s.tar.gz") % (VERSION, VERSION)
