@@ -21,6 +21,10 @@ AX_BOOST_BASE
 PKG_CHECK_MODULES([libthrift], [thrift])
 AC_CHECK_LIB([glog], [openlog], [], [AC_MSG_ERROR(google-glog was not found.)])
 
+AX_LIB_MYSQL
+AC_CHECK_LIB([mysqlpp], [main], [AC_SUBST([MYSQLPP_LIBS], [-lmysqlpp])],
+		     [AC_MSG_ERROR(mysqlpp was not found)])
+
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h sys/time.h unistd.h])
 
