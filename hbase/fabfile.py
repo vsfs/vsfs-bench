@@ -47,6 +47,9 @@ def load_config():
     env.hbase_bin = os.path.join(env.hbase_dir, 'bin')
     env.hbase_conf = os.path.join(env.hbase_dir, 'conf')
 
+    if not os.path.exists(NODE_FILE):
+        raise UserWarning("You must create a node list file {}"
+                .format(NODE_FILE))
     with open(NODE_FILE) as fobj:
         node_list = [line.strip() for line in fobj]
     env.head = node_list[0]

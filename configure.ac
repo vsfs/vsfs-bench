@@ -29,7 +29,7 @@ AC_CHECK_LIB([mysqlpp], [main], [AC_SUBST([MYSQLPP_LIBS], [-lmysqlpp])],
 AC_CHECK_HEADERS([fcntl.h sys/time.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
-AC_CHECK_HEADER_STDBOOL
+AC_HEADER_STDBOOL
 AC_TYPE_SIZE_T
 AC_TYPE_SSIZE_T
 AC_TYPE_UINT64_T

@@ -16,6 +16,8 @@ def load_config():
 
 @task
 def start():
+    """Starts MongoDB cluster.
+    """
     download_tarball(URL)
 
 
