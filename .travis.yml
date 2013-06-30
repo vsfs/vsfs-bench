@@ -23,6 +23,7 @@ before_install:
   - make && sudo make install
   - cd ..
 before_script:
+  - echo 'localhost' > nodes.txt
   - ./bootstrap
 script:
   - export LD_LIBRARY_PATH=/usr/local/lib
