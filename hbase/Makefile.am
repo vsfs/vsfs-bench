@@ -3,6 +3,11 @@
 BUILT_SOURCES = hbase
 
 HBASE_DIR=$(shell fab --hide=running,status hbase_dir)
-hbase: ${HBASE_DIR}/src/main/resources/org/apache/hadoop/hbase/thrift/Hbase.thrift
+hbase: download ${HBASE_DIR}/src/main/resources/org/apache/hadoop/hbase/thrift/Hbase.thrift
 	if [ ! -d hbase ]; then mkdir hbase; fi
 	thrift --gen cpp -out hbase ${HBASE_DIR}/src/main/resources/org/apache/hadoop/hbase/thrift/Hbase.thrift
+
+download:
+	fab download
+
+.PHONY: download
