@@ -17,3 +17,11 @@ automake --foreign --add-missing --force-missing --copy
 
 git submodule init
 git submodule update
+
+if [ ! -d lib/vsfs ]; then
+	git clone git@github.com:vsfs/vsfs.git lib/vsfs
+else
+	cd lib/vsfs
+	git co master
+	git pull
+fi
