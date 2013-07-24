@@ -7,7 +7,7 @@ import os
 import socket
 import sys
 sys.path.append('..')
-from fablib import base_dir, download_tarball
+from fablib import base_dir, download_tarball, run_background
 
 URL = 'http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-2.4.5.tgz'
 
@@ -25,9 +25,6 @@ def load_config():
         node_list = [line.strip() for line in fobj]
     env.head = node_list[0]
     env.workers = node_list[1:]
-    env.head_node_id = len(env.workers) + 2
-    env.head_ip = socket.gethostbyname(env.head)
-
     env.roledefs = {}
     env.roledefs['head'] = [env.head]
 
@@ -38,7 +35,14 @@ load_config()
 def start_config_server():
     """Starts MongoDB config server.
     """
-    run('%(mongo_bin)s --configsvr --dbpath %(config_dir)s' % env)
+    run_background('%(mongo_bin)s --configsvr --dbpath %(config_dir)s' % env)
+    run_background('%(bin_dir)s/mongos --configdb %(head)s' % env)
+
+
+@roles('head')
+def stop_config_server():
+    run('pkill mongod')
+    run('pkill mongos')
 
 
 @task
@@ -55,4 +59,4 @@ def start():
 
 @task
 def stop():
-    pass
+    execute(stop_config_server)

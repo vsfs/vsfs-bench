@@ -51,6 +51,12 @@ def download_tarball(url):
     return True
 
 
+def run_background(cmd):
+    """Run a remote task in background
+    """
+    run('nohup %s >& /dev/null < /dev/null &' % cmd, shell=True, pty=False)
+
+
 def create_dir(path, mode=755):
     """Creates a new directory. If the directory already exists, then it
     deletes the directory first.
