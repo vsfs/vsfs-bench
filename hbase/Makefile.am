@@ -8,6 +8,6 @@ hbase: download ${HBASE_DIR}/src/main/resources/org/apache/hadoop/hbase/thrift/H
 	thrift --gen cpp -out hbase ${HBASE_DIR}/src/main/resources/org/apache/hadoop/hbase/thrift/Hbase.thrift
 
 download:
-	if [ ! -d ${HBASE_DIR} ]; then fab d
-		fab download
+	if [ ! -d ${HBASE_DIR} ]; then fab download; fi
+
 .PHONY: download
