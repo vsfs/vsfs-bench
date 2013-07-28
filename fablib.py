@@ -36,14 +36,15 @@ def result_filename(prefix, **kwargs):
     return prefix + '_' + now.strftime('%Y_%m_%d_%H_%M') + ext
 
 
-def download_tarball(url):
+def download_tarball(url, output=None):
     """Download the tarball file and uncompress it.
     """
-    basedir = base_dir(url)
-    if os.path.exists(basedir):
+    if not output:
+        output = base_dir(url)
+    if os.path.exists(output):
         return False
-    local("wget %s" % url)
-    filename = os.path.basename(url)
+    local("wget -O %s %s" % (output, url))
+    filename = os.path.basename(output)
     if filename.endswith('.tar.gz') or filename.endswith('.tgz'):
         local("tar -xzf %s" % filename)
     elif filename.endswith('.tar.bz'):

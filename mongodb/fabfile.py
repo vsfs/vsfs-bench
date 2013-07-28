@@ -29,6 +29,8 @@ sys.path.append('..')
 from fablib import base_dir, download_tarball, run_background
 
 URL = 'http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-2.4.5.tgz'
+CXX_DRIVER_URL = 'http://downloads.mongodb.org/cxx-driver/' \
+                 'mongodb-linux-x86_64-2.4.5.tgz'
 
 
 def load_config():
@@ -80,6 +82,11 @@ def stop_shared_server():
     with settings(warn_only=True):
         run('pkill mongod')
 
+
+@task
+def download():
+    download_tarball(URL)
+    download_tarball(CXX_DRIVER_URL, output='cxx_driver.tgz')
 
 @task
 def start(num_shard):

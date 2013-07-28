@@ -22,6 +22,7 @@
 #include <vector>
 #include "vobla/status.h"
 #include "vsfs/rpc/rpc_client.h"
+#include "vsfs/rpc/vsfs_types.h"
 #include "vsbench/driver.h"
 #include "hbase/hbase/Hbase.h"
 

@@ -6,20 +6,20 @@ AM_CPPFLAGS = $(libthrift_CFLAGS) $(MYSQL_CFLAGS) -I$(top_srcdir)/lib/vobla \
 	      -I${top_srcdir}/lib/vsfs
 
 LDADD = \
-  libvsfs-perf.a \
-  ${top_srcdir}/vsfs/client/libvsfs-client.a \
-  ${top_srcdir}/vsfs/index/libvsfs-index.a \
-  ${top_srcdir}/vsfs/rpc/libvsfs-rpc.a \
-  ${top_srcdir}/vsfs/common/libvsfs-common.a \
-  ${top_srcdir}/base/libbase.a \
+  libvsfs-vsbench.a \
+  ${top_srcdir}/lib/vsfs/vsfs/client/libvsfs-client.a \
+  ${top_srcdir}/lib/vsfs/vsfs/index/libvsfs-index.a \
+  ${top_srcdir}/lib/vsfs/vsfs/rpc/libvsfs-rpc.a \
+  ${top_srcdir}/lib/vsfs/common/libvsfs-common.a \
+  ${top_srcdir}/lib/vsfs/lib/vobla/vobla/libvobla.a \
   ${MYSQLPP_LIBS} \
   ${libthrift_LIBS}
 
 SUBDIRS = \
   hbase
 
-noinst_LIBRARIES = libvsfs-perf.a
-libvsfs_perf_a_SOURCES = \
+noinst_LIBRARIES = libvsfs-vsbench.a
+libvsfs_vsbench_a_SOURCES = \
   hbase/hbase/Hbase.cpp \
   hbase/hbase/Hbase.h \
   hbase/hbase/Hbase_constants.cpp \
