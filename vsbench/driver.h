@@ -39,7 +39,7 @@ namespace vsfs {
 
 class ComplexQuery;
 
-namespace perf {
+namespace vsbench {
 
 class Driver {
  public:
@@ -92,7 +92,7 @@ class Driver {
   void reorder_records(const RecordVector& records, PrefixMap* prefix_map);
 };
 
-}  // namespace perf
+}  // namespace vsbench
 }  // namespace vsfs
 
 #endif  // VSBENCH_DRIVER_H_

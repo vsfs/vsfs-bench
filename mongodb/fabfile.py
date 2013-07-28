@@ -5,6 +5,7 @@ from __future__ import print_function, division
 from fabric.api import task, env, execute, roles, run, local
 import os
 import socket
+import pymongo
 import sys
 sys.path.append('..')
 from fablib import base_dir, download_tarball, run_background
@@ -59,4 +60,6 @@ def start():
 
 @task
 def stop():
+    """Stops a MongoDB cluster.
+    """
     execute(stop_config_server)

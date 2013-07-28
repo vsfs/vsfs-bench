@@ -1,3 +1,4 @@
 -e git://github.com/eddyxu/tiramisu.git#egg=tiramisu
 PyYAML
 fabric
+pymongo
