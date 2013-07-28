@@ -2,7 +2,8 @@
 """
 
 from __future__ import print_function, division
-from fabric.api import task, env, execute, roles, run, local
+from fabric.api import task, env, execute, roles, run, local, settings
+from fabric.api import parallel
 import os
 import socket
 import pymongo
@@ -40,26 +41,53 @@ def start_config_server():
     run_background('%(bin_dir)s/mongos --configdb %(head)s' % env)
 
 
+@parallel
+def start_shared_server():
+    run_background('%(mongo_bin)s --shardsvr --port 27017 --dbpath %(data_dir)s' % env)
+
+
 @roles('head')
 def stop_config_server():
-    run('pkill mongod')
-    run('pkill mongos')
+    """Stops the configsrv and mongs
+    """
+    with settings(warn_only=True):
+        run('pkill mongod')
+        run('pkill mongos')
+
+
+@parallel
+def stop_shared_server():
+    """Stops all shared servers.
+    """
+    with settings(warn_only=True):
+        run('pkill mongod')
 
 
 @task
-def start():
+def start(num_shard):
     """Starts MongoDB cluster.
+
+    @param num_shard the number of shard servers.
     """
+    num_shard = int(num_shard)
     download_tarball(URL)
 
     if not os.path.exists(env.data_dir):
         os.makedirs(env.data_dir)
 
     execute(start_config_server)
+    print(env.workers)
+    execute(start_shared_server, hosts=env.workers[:num_shard])
+
+    conn = pymongo.Connection(env.head)
+    admin = conn.admin
+    for shard in env.workers[:num_shard]:
+        admin.command('addshard', shard)
 
 
 @task
 def stop():
     """Stops a MongoDB cluster.
     """
+    execute(stop_shared_server, hosts=env.workers)
     execute(stop_config_server)
