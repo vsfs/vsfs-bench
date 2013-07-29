@@ -1,9 +1,17 @@
-/**
- * \file vsfs_driver.cpp
- *
- * \brief Vsfs Performance Test Driver.
- *
+/*
  * Copyright 2013 (c) Lei Xu <eddyxu@gmail.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include <boost/lexical_cast.hpp>
@@ -13,7 +21,7 @@
 #include <string>
 #include <vector>
 #include "vsfs/client/vsfs_client.h"
-#include "vsfs/perf/vsfs/vsfs_driver.h"
+#include "vsfs/vsfs_driver.h"
 
 using boost::lexical_cast;
 using std::string;
@@ -23,7 +31,7 @@ namespace vsfs {
 
 using client::VSFSRpcClient;
 
-namespace perf {
+namespace vsbench {
 
 DEFINE_string(vsfs_host, "", "Sets the master server address.");
 DEFINE_int32(vsfs_port, 9876, "Sets the port of master server.");
@@ -75,5 +83,5 @@ Status VsfsDriver::clear() {
   return Status::OK;
 }
 
-}  // namespace perf
+}  // namespace vsbench
 }  // namespace vsfs

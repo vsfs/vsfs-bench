@@ -24,4 +24,10 @@ else
 	cd lib/vsfs
 	git co master
 	git pull
+	cd -
 fi
+
+cd lib/vsfs
+./bootstrap
+./configure
+make

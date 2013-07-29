@@ -14,50 +14,36 @@
  * limitations under the License.
  */
 
-#ifndef VSFS_VSFS_DRIVER_H_
-#define VSFS_VSFS_DRIVER_H_
+#ifndef MONGODB_MONGO_DRIVER_H_
+#define MONGODB_MONGO_DRIVER_H_
 
-#include <memory>
 #include <string>
 #include <vector>
-#include "vobla/status.h"
-#include "vsfs/client/vsfs_rpc_client.h"
-#include "vsbench/driver.h"
 
 using std::string;
-using std::unique_ptr;
 using std::vector;
 
 namespace vsfs {
 namespace vsbench {
 
-class VsfsDriver : public Driver {
+class MongoDBDriver : public Driver {
  public:
-  VsfsDriver();
+  MongoDBDriver() = default;
 
-  virtual ~VsfsDriver();
+  virtual MongoDBDriver() {}
 
   virtual Status connect();
 
-  virtual Status init();
-
-  virtual Status create_index(const string &root, const string &name,
-                              int index_type, int key_type);
-
-  virtual Status import(const vector<string> &files);
+  virtual Status import(const vector<string>& files);
 
   virtual Status insert(const RecordVector& records);
 
-  virtual Status search(const ComplexQuery& query, vector<string> *files);
+  virtual Status search(const ComplexQuery& query, vector<string>* results);
 
-  /// Deletes all tables;
   virtual Status clear();
-
- private:
-  unique_ptr<client::VSFSRpcClient> client_;
 };
 
 }  // namespace vsbench
 }  // namespace vsfs
 
-#endif  // VSFS_VSFS_DRIVER_H_
+#endif  // MONGODB_MONGO_DRIVER_H_

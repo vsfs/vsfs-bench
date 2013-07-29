@@ -26,6 +26,7 @@
 using std::string;
 namespace fs = boost::filesystem;
 
+namespace vsfs {
 namespace vsbench {
 
 Driver* Driver::create_driver(const string &name) {

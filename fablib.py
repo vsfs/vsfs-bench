@@ -40,9 +40,11 @@ def download_tarball(url, output=None):
     """Download the tarball file and uncompress it.
     """
     if not output:
-        output = base_dir(url)
-    if os.path.exists(output):
+        output = os.path.basename(url)
+    basedir = base_dir(url)
+    if os.path.exists(basedir):
         return False
+    print('OUTPUT:', output)
     local("wget -O %s %s" % (output, url))
     filename = os.path.basename(output)
     if filename.endswith('.tar.gz') or filename.endswith('.tgz'):

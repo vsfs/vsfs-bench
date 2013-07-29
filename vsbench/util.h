@@ -14,21 +14,17 @@
  * limitations under the License.
  */
 
-/**
- * \brief Shared utility for vsbench toolset.
- */
-
 #ifndef VSBENCH_UTIL_H_
 #define VSBENCH_UTIL_H_
 
 #include <string>
 #include "vobla/status.h"
-#include "vsfs/perf/driver.h"
+#include "vsbench/driver.h"
 
 using std::string;
 
 namespace vsfs {
-namespace perf {
+namespace vsbench {
 
 class Util {
  public:
@@ -47,7 +43,7 @@ class Util {
                              int num_files);
 };
 
-}  // namespace perf
+}  // namespace vsbench
 }  // namespace vsfs
 
 #endif  // VSBENCH_UTIL_H_

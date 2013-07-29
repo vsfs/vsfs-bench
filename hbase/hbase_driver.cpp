@@ -308,8 +308,7 @@ Status HbaseDriver::search(const ComplexQuery& query, vector<string> *files) {
   CHECK_NOTNULL(files);
   Status status;
   string prefix = query.root();
-  vector<string> index_names;
-  query.get_index_names_of_range_queries(&index_names);
+  auto index_names = query.get_names_of_range_queries();
 
   for (const auto& index_name : index_names) {
     vector<string> table_names;
@@ -318,7 +317,7 @@ Status HbaseDriver::search(const ComplexQuery& query, vector<string> *files) {
       LOG(ERROR) << "Failed to search HBase: " << status.message();
       return status;
     }
-    const RpcRangeQuery *range_query = query.range_query(index_name);
+    auto range_query = query.range_query(index_name);
     for (const auto& table_name : table_names) {
       LOG(INFO) << "Low: " << range_query->lower
                 << " Upper: " << range_query->upper;

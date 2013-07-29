@@ -1,11 +1,21 @@
-/**
- * \brief     Build an index in mysql
+/*
+ * Copyright 2013 (c) Lei Xu <eddyxu@gmail.com>
  *
- * Copyright  Lei Xu <eddyxu@gmail.com>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
-#ifndef VSFS_PERF_MYSQL_MYSQL_DRIVER_H_
-#define VSFS_PERF_MYSQL_MYSQL_DRIVER_H_
+#ifndef MYSQL_MYSQL_DRIVER_H_
+#define MYSQL_MYSQL_DRIVER_H_
 
 #include <mysql++/mysql++.h>
 #include <list>
@@ -14,7 +24,7 @@
 #include <utility>
 #include <vector>
 #include "vobla/status.h"
-#include "vsfs/perf/driver.h"
+#include "vsbench/driver.h"
 
 using std::pair;
 using std::string;
@@ -23,7 +33,7 @@ using std::vector;
 using vobla::Status;
 
 namespace vsfs {
-namespace perf {
+namespace vsbench {
 
 /**
  * \brief Minic VSFS in MySQL (cluster).
@@ -88,7 +98,7 @@ class PartitionedMySQLDriver : public MySQLDriver {
                               int index_type, int key_type);
 };
 
-}  // namespace perf
+}  // namespace vsbench
 }  // namespace vsfs
 
-#endif  // VSFS_PERF_MYSQL_MYSQL_DRIVER_H_
+#endif  // MYSQL_MYSQL_DRIVER_H_

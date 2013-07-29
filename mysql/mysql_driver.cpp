@@ -1,8 +1,17 @@
-/**
- * \file mysql_driver.cpp
- * \brief A mysql-based index
- *
+/*
  * Copyright 2013 (c) Lei Xu <eddyxu@gmail.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include <boost/filesystem.hpp>
@@ -19,7 +28,7 @@
 #include "vobla/status.h"
 #include "vsfs/common/hash_util.h"
 #include "vsfs/common/complex_query.h"
-#include "vsfs/perf/mysql/mysql_driver.h"
+#include "mysql/mysql_driver.h"
 
 namespace fs = boost::filesystem;
 using std::map;
@@ -39,7 +48,7 @@ const char kMetaTableName[] = "index_meta";
 const char kFileMetaTableName[] = "file_meta";
 
 namespace vsfs {
-namespace perf {
+namespace vsbench {
 
 // static
 void MySQLDriver::create_database() {
@@ -298,8 +307,7 @@ Status MySQLDriver::search(const ComplexQuery& cq, vector<string> *files) {
   string prefix = cq.root();
   mysqlpp::Query query = conn_.query();
 
-  vector<string> index_names;
-  cq.get_index_names_of_range_queries(&index_names);
+  auto index_names = cq.get_names_of_range_queries();
 
   if (FLAGS_mysql_schema == "single") {
     query << "SELECT path FROM big_index_table_uint64 WHERE ";
@@ -325,8 +333,7 @@ Status MySQLDriver::search(const ComplexQuery& cq, vector<string> *files) {
       files->push_back(res[i][0].c_str());
     }
   } else {
-    vector<string> index_names;
-    cq.get_index_names_of_range_queries(&index_names);
+    auto index_names = cq.get_names_of_range_queries();
 
     for (const auto& index_name : index_names) {
       vector<string> table_names;
@@ -341,7 +348,7 @@ Status MySQLDriver::search(const ComplexQuery& cq, vector<string> *files) {
         table_names.push_back(get_table_name(path, name));
       }
 
-      const RpcRangeQuery *range_query = cq.range_query(index_name);
+      auto range_query = cq.range_query(index_name);
       for (const auto& table_name : table_names) {
         query << "SELECT file_meta.file_path from file_meta," << table_name
               << " WHERE ";
@@ -434,5 +441,5 @@ Status PartitionedMySQLDriver::create_index(
   return Status::OK;
 }
 
-}  // namespace perf
+}  // namespace vsbench
 }  // namespace vsfs

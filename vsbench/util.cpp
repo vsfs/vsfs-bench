@@ -25,14 +25,14 @@
 #include <cstdlib>
 #include <string>
 #include <vector>
-#include "vsfs/perf/util.h"
+#include "vsbench/util.h"
 
 DEFINE_uint64(batch_size, 1024, "Sets the batch size.");
 
 using boost::lexical_cast;
 
 namespace vsfs {
-namespace perf {
+namespace vsbench {
 
 unsigned int Util::seed;
 
@@ -86,5 +86,5 @@ Status Util::insert_files(Driver* driver, const string &root_path,
   return insert_files(driver, root_path, index_name, 0, num_files);
 }
 
-}  // namespace perf
+}  // namespace vsbench
 }  // namespace vsfs
