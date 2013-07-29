@@ -39,7 +39,8 @@
 #include "vsfs/common/complex_query.h"
 #include "vsfs/index/index_info.h"
 
-DEFINE_string(driver, "", "Sets the test driver (hbase/mysql/voltdb/vsfs)");
+DEFINE_string(driver, "", "Sets the test driver "
+             "(hbase/mysql/voltdb/mongodb/vsfs)");
 DEFINE_string(indices, "", "Sets the indices to operate on, e.g., "
               "3,4-7,8,9.");
 DEFINE_int32(num_indices, 100, "Sets the number of indices");

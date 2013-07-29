@@ -18,9 +18,10 @@
 #include <glog/logging.h>
 #include <algorithm>
 #include <string>
-#include "vsbench/driver.h"
 #include "hbase/hbase_driver.h"
+#include "mongodb/mongodb_driver.h"
 #include "mysql/mysql_driver.h"
+#include "vsbench/driver.h"
 #include "vsfs/vsfs_driver.h"
 
 using std::string;
@@ -36,6 +37,8 @@ Driver* Driver::create_driver(const string &name) {
     return new MySQLDriver();
   } else if (name == "vsfs") {
     return new VsfsDriver();
+  } else if (name == "mongodb") {
+    return new MongoDBDriver();
   }
   return nullptr;
 }

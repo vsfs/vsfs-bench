@@ -14,14 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef MONGODB_MONGO_DRIVER_H_
-#define MONGODB_MONGO_DRIVER_H_
+#ifndef MONGODB_MONGODB_DRIVER_H_
+#define MONGODB_MONGODB_DRIVER_H_
 
+#include <memory>
 #include <string>
 #include <vector>
+#include "vobla/status.h"
+#include "vsbench/driver.h"
+#include "mongo/client/dbclient.h"
 
 using std::string;
+using std::unique_ptr;
 using std::vector;
+using vobla::Status;
 
 namespace vsfs {
 namespace vsbench {
@@ -30,20 +36,28 @@ class MongoDBDriver : public Driver {
  public:
   MongoDBDriver() = default;
 
-  virtual MongoDBDriver() {}
+  virtual ~MongoDBDriver() {}
 
-  virtual Status connect();
+  Status init();
 
-  virtual Status import(const vector<string>& files);
+  Status connect();
 
-  virtual Status insert(const RecordVector& records);
+  Status create_index(const string &path, const string &name,
+                      int index_type, int key_type);
 
-  virtual Status search(const ComplexQuery& query, vector<string>* results);
+  Status import(const vector<string>& files);
 
-  virtual Status clear();
+  Status insert(const RecordVector& records);
+
+  Status search(const ComplexQuery& query, vector<string>* results);
+
+  Status clear();
+
+ private:
+  mongo::DBClientConnection db_conn_;
 };
 
 }  // namespace vsbench
 }  // namespace vsfs
 
-#endif  // MONGODB_MONGO_DRIVER_H_
+#endif  // MONGODB_MONGODB_DRIVER_H_

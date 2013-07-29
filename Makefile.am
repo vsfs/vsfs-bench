@@ -3,7 +3,9 @@
 AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = $(libthrift_CFLAGS) $(MYSQL_CFLAGS) -I$(top_srcdir)/lib/vobla \
-	      -I${top_srcdir}/lib/vsfs
+	      -I${top_srcdir}/lib/vsfs \
+	      -isystem mongodb/mongo-cxx-driver-v2.4/src
+AM_LDFLAGS = -Lmongodb/mongo-cxx-driver-v2.4/build
 
 CXX=mpic++
 LDADD = \
@@ -14,7 +16,7 @@ LDADD = \
   ${top_srcdir}/lib/vsfs/vsfs/common/libvsfs-common.a \
   ${top_srcdir}/lib/vsfs/lib/vobla/vobla/libvobla.la \
   ${MYSQLPP_LIBS} ${BOOST_FILESYSTEM_LIB} ${BOOST_SYSTEM_LIB} \
-  ${libthrift_LIBS}
+  ${libthrift_LIBS} -lmongoclient -lboost_thread
 
 SUBDIRS = \
   hbase
@@ -31,6 +33,8 @@ libvsfs_vsbench_a_SOURCES = \
   hbase/hbase_driver.h \
   mysql/mysql_driver.cpp \
   mysql/mysql_driver.h \
+  mongodb/mongodb_driver.h \
+  mongodb/mongodb_driver.cpp \
   vsbench/driver.cpp \
   vsbench/driver.h \
   vsbench/util.cpp \
