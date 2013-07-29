@@ -5,14 +5,15 @@ ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = $(libthrift_CFLAGS) $(MYSQL_CFLAGS) -I$(top_srcdir)/lib/vobla \
 	      -I${top_srcdir}/lib/vsfs
 
+CXX=mpic++
 LDADD = \
   libvsfs-vsbench.a \
   ${top_srcdir}/lib/vsfs/vsfs/client/libvsfs-client.a \
   ${top_srcdir}/lib/vsfs/vsfs/index/libvsfs-index.a \
   ${top_srcdir}/lib/vsfs/vsfs/rpc/libvsfs-rpc.a \
-  ${top_srcdir}/lib/vsfs/common/libvsfs-common.a \
-  ${top_srcdir}/lib/vsfs/lib/vobla/vobla/libvobla.a \
-  ${MYSQLPP_LIBS} \
+  ${top_srcdir}/lib/vsfs/vsfs/common/libvsfs-common.a \
+  ${top_srcdir}/lib/vsfs/lib/vobla/vobla/libvobla.la \
+  ${MYSQLPP_LIBS} ${BOOST_FILESYSTEM_LIB} ${BOOST_SYSTEM_LIB} \
   ${libthrift_LIBS}
 
 SUBDIRS = \
@@ -42,4 +43,4 @@ noinst_PROGRAMS = \
   hbase/hbase_testtool
 
 hbase_hbase_testtool_SOURCES = hbase/hbase_testtool.cpp
-bin_vsbench_SOURCES = vsbench.cpp
+bin_vsbench_SOURCES = vsbench/vsbench.cpp

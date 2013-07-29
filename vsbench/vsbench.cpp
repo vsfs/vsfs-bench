@@ -63,12 +63,13 @@ using std::unique_ptr;
 using std::vector;
 using vobla::ThreadPool;
 using vobla::Timer;
-using vsfs::perf::Driver;
+using namespace vsfs::vsbench;  // NOLINT
 
 unsigned int seed;
 int mpi_rank;
 int mpi_size;
 
+namespace vsfs {
 namespace vsbench {
 
 /**
@@ -415,6 +416,7 @@ void test_open_search() {
 }
 
 }  // namespace vsbench
+}  // namespace vsfs
 
 int main(int argc, char* argv[]) {
   google::SetUsageMessage("Usage: ./vsbench [options] -op "
