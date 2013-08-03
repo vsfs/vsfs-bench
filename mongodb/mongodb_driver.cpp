@@ -20,7 +20,11 @@
 #include <vector>
 #include "mongodb/mongodb_driver.h"
 
+using mongo::BSONObjBuilder;
+
 DEFINE_string(mongodb_host, "localhost", "Sets the mongodb host to connect");
+
+const char* kTestCollection = "vsfs.test";
 
 namespace vsfs {
 namespace vsbench {
@@ -42,6 +46,8 @@ Status MongoDBDriver::connect() {
 
 Status MongoDBDriver::create_index(const string &path, const string &name,
                                    int index_type, int key_type) {
+  auto p = BSONObjBuilder().append(name, 1).obj();
+  db_conn_.ensureIndex(kTestCollection, p);
   return Status::OK;
 }
 
@@ -50,6 +56,14 @@ Status MongoDBDriver::import(const vector<string>& files) {
 }
 
 Status MongoDBDriver::insert(const RecordVector& records) {
+  BSONObjBuilder builder;
+  for (const auto& record : records) {
+    auto p = BSONObjBuilder().append("file", std::get<0>(record))
+        .append(std::get<1>(record),
+                static_cast<int>(std::get<2>(record)))
+        .obj();
+    db_conn_.insert(kTestCollection, p);
+  }
   return Status::OK;
 }
 
