@@ -23,7 +23,6 @@ from fabric.api import parallel
 import os
 import pymongo
 import shutil
-import socket
 import sys
 sys.path.append('..')
 from fablib import base_dir, download_tarball, run_background
