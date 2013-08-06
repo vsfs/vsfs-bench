@@ -18,7 +18,7 @@
 """
 
 from __future__ import print_function, division
-from fabric.api import task, env, execute, roles, run, local, settings
+from fabric.api import task, env, execute, roles, run, local, settings, lcd
 from fabric.api import parallel
 import os
 import pymongo
@@ -85,7 +85,9 @@ def stop_shared_server():
 @task
 def download():
     download_tarball(URL)
-    download_tarball(CXX_DRIVER_URL, output='cxx_driver.tgz')
+    download_tarball(CXX_DRIVER_URL, output='mongo-cxx-driver-v2.4.tgz')
+    with lcd('mongo-cxx-driver-v2.4'):
+        local('scons')
 
 @task
 def start(num_shard):

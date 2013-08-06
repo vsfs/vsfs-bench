@@ -23,7 +23,8 @@ LDADD = \
   ${libthrift_LIBS} -lmongoclient -lboost_thread -lmpi_cxx
 
 SUBDIRS = \
-  hbase
+  hbase \
+  mongodb
 
 noinst_LIBRARIES = libvsfs-vsbench.a
 libvsfs_vsbench_a_SOURCES = \

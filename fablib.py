@@ -41,7 +41,7 @@ def download_tarball(url, output=None):
     """
     if not output:
         output = os.path.basename(url)
-    basedir = base_dir(url)
+    basedir = base_dir(output)
     if os.path.exists(basedir):
         return False
     print('OUTPUT:', output)
