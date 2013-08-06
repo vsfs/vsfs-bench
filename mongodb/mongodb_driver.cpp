@@ -21,6 +21,8 @@
 #include "mongodb/mongodb_driver.h"
 
 using mongo::BSONObjBuilder;
+using mongo::BSONObj;
+using std::vector;
 
 DEFINE_string(mongodb_host, "localhost", "Sets the mongodb host to connect");
 
@@ -52,17 +54,29 @@ Status MongoDBDriver::create_index(const string &path, const string &name,
 }
 
 Status MongoDBDriver::import(const vector<string>& files) {
+  vector<BSONObj> buffer;
+  for (const auto& file : files) {
+    auto bson_obj = BSON("file" << file);
+    buffer.push_back(bson_obj);
+    // TODO(lxu): use a FLAGS to customize the buffer size.
+    if (buffer.size() % 1024 == 0) {
+      db_conn_.insert(kTestCollection, buffer);
+      buffer.clear();
+    }
+  }
+  if (!buffer.empty()) {
+    db_conn_.insert(kTestCollection, buffer);
+  }
   return Status::OK;
 }
 
 Status MongoDBDriver::insert(const RecordVector& records) {
-  BSONObjBuilder builder;
   for (const auto& record : records) {
-    auto p = BSONObjBuilder().append("file", std::get<0>(record))
-        .append(std::get<1>(record),
-                static_cast<int>(std::get<2>(record)))
-        .obj();
-    db_conn_.insert(kTestCollection, p);
+    auto query = BSON("file" << std::get<0>(record));
+    auto update = BSON("$set"
+        << BSON(std::get<1>(record) << static_cast<int>(std::get<2>(record))));
+    // Can not batch update MongoDB?
+    db_conn_.update(kTestCollection, query, update);
   }
   return Status::OK;
 }
