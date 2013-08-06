@@ -7,7 +7,6 @@ AM_CPPFLAGS = $(libthrift_CFLAGS) $(MYSQL_CFLAGS) -I$(top_srcdir)/lib/vobla \
 	      -isystem mongodb/mongo-cxx-driver-v2.4/src
 AM_LDFLAGS = -Lmongodb/mongo-cxx-driver-v2.4/build
 
-CXX=mpic++
 LDADD = \
   libvsfs-vsbench.a \
   ${top_srcdir}/lib/vsfs/vsfs/client/libvsfs-client.a \
