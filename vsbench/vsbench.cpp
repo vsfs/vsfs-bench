@@ -118,13 +118,13 @@ Status create_indices() {
   int index_type = vsfs::index::IndexInfo::BTREE;
   int key_type = UINT64;
   for (int i = 0; i < FLAGS_num_indices; ++i) {
-    string table_name = "index." + lexical_cast<string>(i);
-    VLOG(1) << "Create index: " << table_name;
-    status = driver->create_index(FLAGS_path, table_name,
+    string index_name = "index" + lexical_cast<string>(i);
+    VLOG(1) << "Create index: " << index_name;
+    status = driver->create_index(FLAGS_path, index_name,
                                   index_type, key_type);
     if (!status.ok()) {
       LOG(ERROR) << "Failed to create index: ("
-          << FLAGS_path << ", " << table_name << ", " << index_type
+          << FLAGS_path << ", " << index_name << ", " << index_type
           << ", " << key_type << ")";
       return status;
     }
@@ -190,7 +190,7 @@ void insert_records_in_thread_pool(const vector<int>& indices) {
   // ThreadPool thread_pool(2);
   vector<string> index_names;
   for (auto idx : indices) {
-    string index_name = "index." + lexical_cast<string>(idx);
+    string index_name = "index" + lexical_cast<string>(idx);
     index_names.push_back(index_name);
   }
   insert_records(index_names);
@@ -240,7 +240,7 @@ void populate() {
       return;
     }
     for (auto idx : indices) {
-      string index_name = "index." + lexical_cast<string>(idx);
+      string index_name = "index" + lexical_cast<string>(idx);
       VLOG(1) << "Connect to populate records for " << index_name;
       status = Util::insert_files(driver.get(), FLAGS_path, index_name,
                                   start, records_per_client);
@@ -395,7 +395,7 @@ void test_open_search() {
         }
 
 
-        string query = string("/foo/bar/?index.") + lexical_cast<string>(i)
+        string query = string("/foo/bar/?index") + lexical_cast<string>(i)
                        + "<1000";
         ComplexQuery cq;
         CHECK(cq.parse(query).ok());

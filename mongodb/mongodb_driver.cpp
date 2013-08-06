@@ -18,6 +18,7 @@
 #include <glog/logging.h>
 #include <string>
 #include <vector>
+#include "vsfs/common/complex_query.h"
 #include "mongodb/mongodb_driver.h"
 
 using mongo::BSONObjBuilder;
@@ -90,6 +91,22 @@ Status MongoDBDriver::insert(const RecordVector& records) {
 
 Status MongoDBDriver::search(const ComplexQuery& query,
                              vector<string>* results) {
+  VLOG(1) << "Query: " << query.debug_string();
+  BSONObjBuilder b;
+  auto prefix = BSON("file" << BSON("$regex" << ("^" + query.root())));
+  b.appendElements(prefix);
+  for (const auto& index_name : query.get_names_of_range_queries()) {
+    auto range = query.range_query(index_name);
+    VLOG(1) << "range: " << range->lower << ":" << range->upper;
+    auto bson_query = BSON(index_name << mongo::GT << std::stoi(range->lower)
+                           << mongo::LT << std::stoi(range->upper));
+    b.appendElements(bson_query);
+  }
+  auto cursor = db_conn_.query(kTestCollection, b.obj());
+  while (cursor->more()) {
+    auto result = cursor->next();
+    results->push_back(result.getStringField("file"));
+  }
   return Status::OK;
 }
 
