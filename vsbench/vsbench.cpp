@@ -43,7 +43,7 @@ DEFINE_string(driver, "", "Sets the test driver "
              "(hbase/mysql/voltdb/mongodb/vsfs)");
 DEFINE_string(indices, "", "Sets the indices to operate on, e.g., "
               "3,4-7,8,9.");
-DEFINE_int32(num_indices, 100, "Sets the number of indices");
+DEFINE_int32(num_indices, 64, "Sets the number of indices");
 DEFINE_int64(records_per_index, 100000, "Sets the number of records in each "
              " index.");
 DEFINE_string(path, "/foo/bar", "Sets the path to create indices.");
@@ -119,6 +119,7 @@ Status create_indices() {
   int key_type = UINT64;
   for (int i = 0; i < FLAGS_num_indices; ++i) {
     string table_name = "index." + lexical_cast<string>(i);
+    VLOG(1) << "Create index: " << table_name;
     status = driver->create_index(FLAGS_path, table_name,
                                   index_type, key_type);
     if (!status.ok()) {

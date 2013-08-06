@@ -13,7 +13,7 @@ before_install:
   - sudo apt-get update
   - sudo apt-get install -y g++-${CXX_VERSION} autoconf-archive libleveldb-dev libsnappy-dev libevent-dev python-support libfuse-dev libattr1-dev
   - sudo apt-get install -y libboost1.53-dev libboost-filesystem1.53-dev libboost-system1.53-dev
-  - sudo apt-get install -y libgflags-dev libgoogle-glog-dev protobuf-compiler libprotobuf-dev libmysql++-dev
+  - sudo apt-get install -y libgflags-dev libgoogle-glog-dev protobuf-compiler libprotobuf-dev libmysql++-dev libopenmpi1.5-dev
   - export CXX="g++-${CXX_VERSION}"
   - sudo pip install -r requirements.txt
   - wget http://apache.osuosl.org/thrift/0.9.0/thrift-0.9.0.tar.gz

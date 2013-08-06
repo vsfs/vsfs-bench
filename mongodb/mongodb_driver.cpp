@@ -32,6 +32,12 @@ namespace vsfs {
 namespace vsbench {
 
 Status MongoDBDriver::init() {
+  auto status = connect();
+  if (!status.ok()) {
+    return status;
+  }
+  clear();
+  db_conn_.ensureIndex(kTestCollection, BSON("file" << 1));
   return Status::OK;
 }
 
@@ -48,7 +54,7 @@ Status MongoDBDriver::connect() {
 
 Status MongoDBDriver::create_index(const string &path, const string &name,
                                    int index_type, int key_type) {
-  auto p = BSONObjBuilder().append(name, 1).obj();
+  auto p = BSON(name << 1);
   db_conn_.ensureIndex(kTestCollection, p);
   return Status::OK;
 }
@@ -60,6 +66,7 @@ Status MongoDBDriver::import(const vector<string>& files) {
     buffer.push_back(bson_obj);
     // TODO(lxu): use a FLAGS to customize the buffer size.
     if (buffer.size() % 1024 == 0) {
+      VLOG(0) << "Import 1024 records to MongoDB.";
       db_conn_.insert(kTestCollection, buffer);
       buffer.clear();
     }
@@ -87,6 +94,7 @@ Status MongoDBDriver::search(const ComplexQuery& query,
 }
 
 Status MongoDBDriver::clear() {
+  db_conn_.dropCollection(kTestCollection);
   return Status::OK;
 }
 
