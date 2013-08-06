@@ -51,6 +51,7 @@ class MongoDBDriver : public Driver {
 
   Status search(const ComplexQuery& query, vector<string>* results);
 
+  /// Clears the MongoDB collections.
   Status clear();
 
  private:
