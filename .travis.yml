@@ -27,6 +27,8 @@ before_script:
   - ./bootstrap
 script:
   - export LD_LIBRARY_PATH=/usr/local/lib
-  - CFLAGS='-g -O0' CXXFLAGS='-g -O0' ./configure --enable-gcov --disable-shared && make
+  - export CXXFLAGS=`mpicc --showme:compile`
+  - export LDFLAGS=`mpicc --showme:link`
+  - ./configure && make
 notifications:
   email: false
