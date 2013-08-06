@@ -1,4 +1,4 @@
 # Makefile.am for HBase-based test.
 
-all: download
+all:
 	fab download
