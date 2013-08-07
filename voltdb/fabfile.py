@@ -11,6 +11,8 @@ from fablib import base_dir, download_tarball
 VERSION = '3.4'
 URL = 'http://voltdb.com/downloads/technologies/server/' + \
       'LINUX-voltdb-%s.tar.gz' % VERSION
+API_URL = 'http://voltdb.com/downloads/technologies/client/' + \
+          'voltdb-client-cpp-linux-x86_64-3.0.tar.gz'
 
 def load_config():
     env.voltdb_dir = 'voltdb-%s' % VERSION
@@ -24,6 +26,7 @@ def download():
     """Downloads the VoltDB binaray and extract.
     """
     download_tarball(URL)
+    download_tarball(API_URL)
 
 @task
 def build():

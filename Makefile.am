@@ -10,6 +10,7 @@ AM_CPPFLAGS = $(libthrift_CFLAGS) $(MYSQL_CFLAGS) -I$(top_srcdir)/lib/vobla \
 	      -I${top_srcdir}/lib/vsfs \
 	      $(MPI_COMPILE_FLAGS) \
 	      -isystem mongodb/mongo-cxx-driver-v2.4/src
+#  -isystem voltdb/voltdb-client-cpp-linux-x86_64-3.0/include
 AM_LDFLAGS = -Lmongodb/mongo-cxx-driver-v2.4/build $(MPI_LINK_FLAGS)
 
 LDADD = \
@@ -19,12 +20,14 @@ LDADD = \
   ${top_srcdir}/lib/vsfs/vsfs/rpc/libvsfs-rpc.a \
   ${top_srcdir}/lib/vsfs/vsfs/common/libvsfs-common.a \
   ${top_srcdir}/lib/vsfs/lib/vobla/vobla/libvobla.la \
+  ${top_srcdir}/voltdb/libvsbench-voltdb.a \
   ${MYSQLPP_LIBS} ${BOOST_FILESYSTEM_LIB} ${BOOST_SYSTEM_LIB} \
   ${libthrift_LIBS} -lmongoclient -lboost_thread -lmpi_cxx
 
 SUBDIRS = \
   hbase \
-  mongodb
+  mongodb \
+  voltdb
 
 noinst_LIBRARIES = libvsfs-vsbench.a
 libvsfs_vsbench_a_SOURCES = \
@@ -36,10 +39,10 @@ libvsfs_vsbench_a_SOURCES = \
   hbase/hbase/Hbase_types.h \
   hbase/hbase_driver.cpp \
   hbase/hbase_driver.h \
+  mongodb/mongodb_driver.cpp \
+  mongodb/mongodb_driver.h \
   mysql/mysql_driver.cpp \
   mysql/mysql_driver.h \
-  mongodb/mongodb_driver.h \
-  mongodb/mongodb_driver.cpp \
   vsbench/driver.cpp \
   vsbench/driver.h \
   vsbench/util.cpp \

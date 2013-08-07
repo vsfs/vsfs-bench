@@ -45,7 +45,9 @@ fi
 AC_FUNC_ERROR_AT_LINE
 
 AC_CONFIG_FILES([Makefile
-                 apps/mvd/Makefile
-                 hbase/Makefile
-				 mongodb/Makefile])
+				 apps/mvd/Makefile
+				 hbase/Makefile
+				 mongodb/Makefile
+				 voltdb/Makefile
+				 ])
 AC_OUTPUT
