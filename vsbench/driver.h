@@ -74,14 +74,14 @@ class Driver {
    * \brief Import files
    * \param files a vector of absolute paths.
    */
-  virtual Status import(const vector<string> &files) = 0;
+  virtual Status import(const vector<string>& files) = 0;
 
   /// Deletes all tables.
   virtual Status clear() = 0;
 
   virtual Status insert(const RecordVector& records) = 0;
 
-  virtual Status search(const ComplexQuery &query, vector<string> *files) = 0;
+  virtual Status search(const ComplexQuery& query, vector<string> *files) = 0;
 
  protected:
   string get_table_name(const string &root, const string &name);

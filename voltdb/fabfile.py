@@ -25,8 +25,10 @@ load_config()
 def download():
     """Downloads the VoltDB binaray and extract.
     """
-    download_tarball(URL)
+    download_tarball(URL, output='voltdb-%s.tar.gz' % VERSION)
     download_tarball(API_URL)
+    api_dir = base_dir(API_URL)
+    local('rm -rf %s/include/boost' % api_dir)
 
 @task
 def build():

@@ -23,6 +23,7 @@
 #include "mysql/mysql_driver.h"
 #include "vsbench/driver.h"
 #include "vsfs/vsfs_driver.h"
+#include "voltdb/voltdb_driver.h"
 
 using std::string;
 namespace fs = boost::filesystem;
@@ -39,6 +40,8 @@ Driver* Driver::create_driver(const string &name) {
     return new VsfsDriver();
   } else if (name == "mongodb") {
     return new MongoDBDriver();
+  } else if (name == "voltdb") {
+    return new VoltDBDriver();
   }
   return nullptr;
 }

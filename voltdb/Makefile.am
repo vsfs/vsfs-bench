@@ -3,7 +3,9 @@
 noinst_LIBRARIES = libvsbench-voltdb.a
 
 AM_CPPFLAGS = \
-  -isystem voltdb/voltdb-client-cpp-linux-x86_64-3.0/include
+  -I${top_srcdir}/lib/vsfs/lib/vobla \
+  -I${top_srcdir}/lib/vsfs \
+  -isystem${top_srcdir}/voltdb/voltdb-client-cpp-linux-x86_64-3.0/include
 
 libvsbench_voltdb_a_SOURCES = \
   voltdb_driver.h \
