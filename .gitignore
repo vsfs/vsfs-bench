@@ -29,7 +29,7 @@ Makefile
 Makefile.in
 *.a
 .deps
-*.swp
+*.sw[po]
 hbase/hbase-*
 hbase/hadoop-*
 hbase/hbase

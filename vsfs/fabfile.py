@@ -8,8 +8,11 @@
 """
 
 from fabric.api import run, roles, task, env, execute, parallel, local
-from fabric.api import settings, cd, hide
+from fabric.api import settings, cd, hide, sudo
+from fabric.colors import green as _green, yellow as _yellow
 from multiprocessing import Queue
+import boto
+import boto.ec2
 import os
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -70,8 +73,6 @@ def load_config():
 
     if not os.path.exists(LOG_DIR):
         os.makedirs(LOG_DIR)
-
-load_config()
 
 
 @parallel(pool_size=10)
@@ -194,7 +195,7 @@ def insert_records(num_indices, client_nodes, records):
     with settings(warn_only=True):
         execute(fablib.insert_record_worker, 'vsfs', in_q, records,
                 {'options': '-vsfs_client_num_thread 16' +
-                ' -vsfs_client_enable_cache -batch_size 4096'},
+                 ' -vsfs_client_enable_cache -batch_size 4096'},
                 hosts=client_nodes)
     end_time = time.time()
     return end_time - start_time
@@ -324,6 +325,7 @@ def test_filebench_without_vsfs(**kwargs):
        @param num_threads
        @param test_dir
     """
+    load_config()
     num_files = kwargs.get('num_files', '100000')
     num_threads = kwargs.get('num_threads', '16')
     test_dir = kwargs.get('test_dir', MNT_POINT)
@@ -376,3 +378,60 @@ def stress_index_server():
     run('%s info -H %s /foo/bar' % (VSFSUTIL, env.head))
 
     execute(stop)
+
+
+EC2_REGION = 'us-east-1'
+EC2_AMI = 'ami-90374bf9'  # Ubuntu server 13.04 instance (w/o EBS)
+EC2_SECURITY_GROUPS = ['quick-start-1']
+
+
+@task
+def ec2_create_instance():
+    """Creates an EC2 instance for VSFS
+    """
+    print(_yellow('Creating EC2 instance'))
+    conn = boto.ec2.connect_to_region(EC2_REGION)
+    conn.run_instances(EC2_AMI,
+                       instance_type='m1.small',
+                       security_groups=EC2_SECURITY_GROUPS,
+                       key_name='eddy')
+
+    reservation = conn.get_all_instances()
+    instance = reservation[0].instances[0]
+    instance.add_tag("Name", "VSFS AMI")
+
+
+@task
+def ec2_terminate_instance():
+    """Terminates the running EC2 instance.
+    """
+    pass
+
+
+def ec2_install_packages():
+    packages = ['g++', 'autoconf-archive', 'libleveldb-dev', 'libsnappy-dev',
+                'libevent-dev', 'libfuse-dev', 'libattr1-dev',
+                'libboost1.53-dev', 'libboost-filesystem1.53-dev',
+                'libboost-system1.53-dev', 'libgflags-dev',
+                'libgoogle-glog-dev', 'git-core']
+    print(_yellow('Installing dependancies..'))
+    with settings(user='ubuntu', key_filename='~/eddy.pem'):
+        sudo('apt-get -qq update')
+        sudo('apt-get -y -qq dist-upgrade')
+        sudo('apt-get -y -qq install %s' % ' '.join(packages))
+
+@task
+def ec2_deploy():
+    """Deploy the newest VSFS on EC2.
+    """
+    conn = boto.ec2.connect_to_region(EC2_REGION)
+    reservation = conn.get_all_instances()
+    instance = reservation[0].instances[0]
+    instance.update()
+
+    while instance.state == u'pending':
+        print(_yellow("Instance state: %s" % instance.state))
+        time.sleep(10)
+        instance.update()
+
+    execute(ec2_install_packages, hosts=[instance.public_dns_name])
