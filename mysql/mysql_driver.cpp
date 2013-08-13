@@ -26,7 +26,7 @@
 #include <utility>
 #include <vector>
 #include "vobla/status.h"
-#include "vsfs/common/hash_util.h"
+#include "vsfs/common/path_util.h"
 #include "vsfs/common/complex_query.h"
 #include "mysql/mysql_driver.h"
 
@@ -193,7 +193,7 @@ Status MySQLDriver::import(const vector<string> &files) {
   const size_t kSQLInsertBatch = 128;
   for (; i < files.size(); ++i) {
     string file_path = files[i];
-    uint64_t file_hash = HashUtil::file_path_to_hash(file_path);
+    uint64_t file_hash = PathUtil::path_to_hash(file_path);
     if (i % kSQLInsertBatch == 0) {
       if (i) {
         VLOG(1) << "Insert to " << kFileMetaTableName << ": " << i;
@@ -251,7 +251,7 @@ Status MySQLDriver::insert(const RecordVector& records) {
         const auto& file_and_key = table_and_records.second[i];
 
         const string &file_path = file_and_key.second;
-        uint64_t file_hash = HashUtil::file_path_to_hash(file_path);
+        auto file_hash = PathUtil::path_to_hash(file_path);
         if (i % kSQLInsertBatch == 0) {
           if (i) {
             VLOG(2) << "Execute insert to " << table_name << ": " << i;
