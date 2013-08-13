@@ -36,8 +36,8 @@ INDEXD_DIR = os.path.join('/scratch', USER, 'vsfs/indexd')
 
 BASE_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, 'base_dir'))
 MNT_POINT = os.path.abspath(os.path.join(SCRIPT_DIR, 'mnt'))
-FUSE_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir, os.pardir,
-                           'fuse'))
+FUSE_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir,
+                           'lib/vsfs/vsfs/fuse'))
 ITERATIONS = 3
 
 FILEBENCH_WORKLOADS = ['fileserver', 'oltp', 'webserver']
@@ -85,8 +85,8 @@ def prepare_directories():
 def start_master():
     """Starts the master daemon.
     """
-    run('%s -primary -daemon -log_dir %s' %
-        (MASTERD, LOG_DIR))
+    run('%s -primary -daemon -dir %s -log_dir %s' %
+        (MASTERD, MASTERD_DIR, LOG_DIR))
 
 
 @roles('head')
@@ -232,17 +232,17 @@ def test_data_migration():
 
 
 def config_filebench(workload, num_files, num_threads, test_dir):
-    #TODO(ziling): use tripple quoted string.
+    print(workload, test_dir, num_files, num_threads, MEAN_FILE_SIZE, IO_SIZE, RUN_TIME)
     filebench_conf = """load %s
 set $dir=%s
 set $nfiles=%d
 set $nthreads=%d
-set $meanfilesize=%d
-set $iosize=%d
-run %d
+set $meanfilesize=%s
+set $iosize=%s
+run %s
 """ % (workload, test_dir, num_files, num_threads, MEAN_FILE_SIZE,
        IO_SIZE, RUN_TIME)
-    print filebench_conf
+    print(filebench_conf)
     with open(FILEBENCH_CONF_FILE, 'w') as f:
         f.write(filebench_conf)
 
@@ -258,12 +258,12 @@ def run_filebench():
 def mount_vsfs():
     """Mount VSFS on lustre.
     """
-    vsfs_path = os.path.join(FUSE_DIR, 'vsfs')
+    vsfs_path = os.path.join(FUSE_DIR, 'mount.vsfs')
     if not os.path.exists(BASE_DIR):
         os.makedirs(BASE_DIR)
     if not os.path.exists(MNT_POINT):
         os.makedirs(MNT_POINT)
-    print "Trying to mount VSFS. "
+    print(_yellow("Trying to mount VSFS. "))
     run('%s -o nonempty -b %s -H %s %s' %
         (vsfs_path, BASE_DIR, env.head, MNT_POINT))
 
@@ -283,8 +283,8 @@ def test_filebench_with_vsfs(**kwargs):
        @param num_threads
        @param test_dir
     """
-    num_files = kwargs.get('num_files', '100000')
-    num_threads = kwargs.get('num_threads', '16')
+    num_files = int(kwargs.get('num_files', '100000'))
+    num_threads = int(kwargs.get('num_threads', '16'))
     test_dir = kwargs.get('test_dir', MNT_POINT)
     mount_vsfs()
     with open('test_filebench_with_vsfs', 'w') as result_file:
