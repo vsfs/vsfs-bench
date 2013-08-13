@@ -27,7 +27,7 @@
 #include <string>
 #include <vector>
 #include "voltdb/voltdb_driver.h"
-#include "vsfs/common/hash_util.h"
+#include "vsfs/common/path_util.h"
 
 using std::string;
 using std::vector;
@@ -82,7 +82,7 @@ Status VoltDBDriver::import(const vector<string>& files) {
   voltdb::Procedure procedure("file_meta.INSERT", param_types);
   for (const auto& file : files) {
     voltdb::ParameterSet* params = procedure.params();
-    auto hash = HashUtil::file_path_to_hash(file);
+    auto hash = PathUtil::path_to_hash(file);
     params->addInt64(hash).addString(file);
     client_->client.invoke(procedure);
   }
