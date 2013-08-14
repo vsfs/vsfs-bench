@@ -53,11 +53,12 @@ Status VsfsDriver::init() {
 
 Status VsfsDriver::create_index(const string &root, const string &name,
                                 int index_type, int key_type) {
-  return client_->create_index(root, name, index_type, key_type);
+  return client_->create_index(root, name, index_type, key_type,
+                               0700, 1000, 1000);
 }
 
 Status VsfsDriver::import(const vector<string> &files) {
-  return client_->import(files);
+  // return client_->import(files);
 }
 
 Status VsfsDriver::insert(const RecordVector& records) {

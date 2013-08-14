@@ -21,8 +21,8 @@ import time
 
 SCRIPT_DIR = os.path.dirname(__file__)
 MAX_RETRY = 10
-URL = "http://cdn.mysql.com/Downloads/MySQL-Cluster-7.2/" + \
-    "mysql-cluster-gpl-7.2.10-linux2.6-x86_64.tar.gz"
+URL = "http://cdn.mysql.com/Downloads/MySQL-Cluster-7.3/" + \
+    "mysql-cluster-gpl-7.3.2-linux-glibc2.5-x86_64.tar.gz"
 VSBENCH = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir, 'vsbench'))
 
 

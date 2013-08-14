@@ -27,9 +27,11 @@ import sys
 sys.path.append('..')
 from fablib import base_dir, download_tarball, run_background
 
-URL = 'http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-2.4.5.tgz'
+MONGO_VERSION = '2.5.1'
+URL = 'http://fastdl.mongodb.org/linux/' \
+      'mongodb-linux-x86_64-%s.tgz' % MONGO_VERSION
 CXX_DRIVER_URL = 'http://downloads.mongodb.org/cxx-driver/' \
-                 'mongodb-linux-x86_64-2.4.5.tgz'
+                 'mongodb-linux-x86_64-%s.tgz' % MONGO_VERSION
 
 
 def load_config():
@@ -85,8 +87,8 @@ def stop_shared_server():
 @task
 def download():
     download_tarball(URL)
-    download_tarball(CXX_DRIVER_URL, output='mongo-cxx-driver-v2.4.tgz')
-    with lcd('mongo-cxx-driver-v2.4'):
+    download_tarball(CXX_DRIVER_URL, output='mongo-cxx-driver-v2.5.tgz')
+    with lcd('mongo-cxx-driver-v2.5'):
         local('scons')
 
 @task

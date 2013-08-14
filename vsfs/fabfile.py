@@ -23,24 +23,21 @@ import pwd
 
 SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
 NODE_FILE = os.path.join(os.path.dirname(__file__), os.pardir, 'nodes.txt')
-MASTERD = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir, os.pardir,
+MASTERD = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir, 'lib/vsfs/vsfs',
                                        'masterd', 'masterd'))
-INDEXD = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir, os.pardir,
-                                      'index_server', 'indexd'))
-METAD = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir, os.pardir,
-                                     'meta_server', 'metad'))
+INDEXD = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir, 'lib/vsfs/vsfs',
+                                      'indexd', 'indexd'))
 LOG_DIR = os.path.join(SCRIPT_DIR, 'log')
 VSFSUTIL = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir, os.pardir,
-                                        'client', 'vsfsutil'))
+                                        'client', 'vsfs'))
 USER = pwd.getpwuid(os.getuid())[0]
 MASTERD_DIR = os.path.join('/scratch', USER, 'vsfs/masterd')
 INDEXD_DIR = os.path.join('/scratch', USER, 'vsfs/indexd')
-METAD_DIR = os.path.join('/scratch', USER, 'vsfs/metad')
 
 BASE_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, 'base_dir'))
 MNT_POINT = os.path.abspath(os.path.join(SCRIPT_DIR, 'mnt'))
-FUSE_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir, os.pardir,
-                           'fuse'))
+FUSE_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir,
+                           'lib/vsfs/vsfs/fuse'))
 ITERATIONS = 3
 
 FILEBENCH_WORKLOADS = ['fileserver', 'oltp', 'webserver']
@@ -74,6 +71,7 @@ def load_config():
     if not os.path.exists(LOG_DIR):
         os.makedirs(LOG_DIR)
 
+load_config()
 
 @parallel(pool_size=10)
 def prepare_directories():
@@ -81,15 +79,14 @@ def prepare_directories():
     """
     fablib.create_dir(MASTERD_DIR)
     fablib.create_dir(INDEXD_DIR)
-    fablib.create_dir(METAD_DIR)
 
 
 @parallel
 def start_master():
     """Starts the master daemon.
     """
-    run('%s --master_server_fast_partition_lookup -daemon -log_dir %s' %
-        (MASTERD, LOG_DIR))
+    run('%s -primary -daemon -dir %s -log_dir %s' %
+        (MASTERD, MASTERD_DIR, LOG_DIR))
 
 
 @roles('head')
@@ -108,8 +105,7 @@ def start_index_server(options='', **kwargs):
     master_node = kwargs.get('master', env.head)
     cmd = '%s -master_addr %s -daemon -log_dir %s ' \
           '-datadir %s ' \
-          '-update_immediately ' \
-          '-index_server_type nonblocking %s' % \
+          '-update_immediately %s' % \
           (INDEXD, master_node, LOG_DIR, INDEXD_DIR, options)
     if kwargs.get('profile', False):
         cmd = 'CPUPROFILE=indexd.prof ' + cmd
@@ -120,17 +116,6 @@ def start_index_server(options='', **kwargs):
 @parallel(pool_size=10)
 def stop_index_server():
     run('pkill indexd || true')
-
-
-def start_meta_servers(**kwargs):
-    master_node = kwargs.get('master', env.head)
-    run('%s -master_addr %s -daemon -log_dir %s' %
-        (METAD, master_node, LOG_DIR))
-
-
-@parallel(pool_size=10)
-def stop_meta_server():
-    run('pkill metad || true')
 
 
 @task
@@ -164,7 +149,6 @@ def start(nodes, **kwargs):
         master = master_nodes[i]
         index_servers = env.workers[start_node:end_node]
         execute(start_index_server, master=master, hosts=index_servers)
-        execute(start_meta_servers, master=master, host=env.workers[-1-i])
 
 
 @task
@@ -173,7 +157,6 @@ def stop():
     """
     with settings(
             hide('warnings', 'running', 'stdout', 'stderr')):
-        execute(stop_meta_server, hosts=env.workers)
         execute(stop_index_server, hosts=env.workers)
         execute(stop_master, hosts=env.nodes)
 
@@ -249,17 +232,17 @@ def test_data_migration():
 
 
 def config_filebench(workload, num_files, num_threads, test_dir):
-    #TODO(ziling): use tripple quoted string.
+    print(workload, test_dir, num_files, num_threads, MEAN_FILE_SIZE, IO_SIZE, RUN_TIME)
     filebench_conf = """load %s
 set $dir=%s
 set $nfiles=%d
 set $nthreads=%d
-set $meanfilesize=%d
-set $iosize=%d
-run %d
+set $meanfilesize=%s
+set $iosize=%s
+run %s
 """ % (workload, test_dir, num_files, num_threads, MEAN_FILE_SIZE,
        IO_SIZE, RUN_TIME)
-    print filebench_conf
+    print(filebench_conf)
     with open(FILEBENCH_CONF_FILE, 'w') as f:
         f.write(filebench_conf)
 
@@ -275,12 +258,12 @@ def run_filebench():
 def mount_vsfs():
     """Mount VSFS on lustre.
     """
-    vsfs_path = os.path.join(FUSE_DIR, 'vsfs')
+    vsfs_path = os.path.join(FUSE_DIR, 'mount.vsfs')
     if not os.path.exists(BASE_DIR):
         os.makedirs(BASE_DIR)
     if not os.path.exists(MNT_POINT):
         os.makedirs(MNT_POINT)
-    print "Trying to mount VSFS. "
+    print(_yellow("Trying to mount VSFS. "))
     run('%s -o nonempty -b %s -H %s %s' %
         (vsfs_path, BASE_DIR, env.head, MNT_POINT))
 
@@ -300,8 +283,8 @@ def test_filebench_with_vsfs(**kwargs):
        @param num_threads
        @param test_dir
     """
-    num_files = kwargs.get('num_files', '100000')
-    num_threads = kwargs.get('num_threads', '16')
+    num_files = int(kwargs.get('num_files', '100000'))
+    num_threads = int(kwargs.get('num_threads', '16'))
     test_dir = kwargs.get('test_dir', MNT_POINT)
     mount_vsfs()
     with open('test_filebench_with_vsfs', 'w') as result_file:
@@ -366,7 +349,6 @@ def stress_index_server():
     execute(prepare_directories, hosts=env.workers[:2])
     start_master()
     run('sleep 5')
-    execute(start_meta_servers, hosts=env.workers[-1:])
     execute(start_index_server, hosts=env.workers[:2])
     run('sleep 5')
 

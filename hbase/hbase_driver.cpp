@@ -27,7 +27,7 @@
 #include <vector>
 #include "vobla/traits.h"
 #include "vsfs/common/complex_query.h"
-#include "vsfs/common/hash_util.h"
+#include "vsfs/common/path_util.h"
 #include "hbase/hbase/Hbase.h"
 #include "hbase/hbase_driver.h"
 
@@ -228,7 +228,7 @@ Status HbaseDriver::insert(const RecordVector& records) {
       vector<BatchMutation> filemap_row_batches;
       for (const auto& record : index_name_and_records.second) {
         string file_path = std::get<0>(*record);
-        uint64_t file_id = HashUtil::file_path_to_hash(file_path);
+        auto file_id = PathUtil::path_to_hash(file_path);
         uint64_t key = std::get<2>(*record);
         // string row(&key, sizeof(key));
         row_batches.emplace_back();
