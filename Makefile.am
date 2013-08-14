@@ -9,9 +9,9 @@ MPI_LINK_FLAGS = $(shell mpicc --showme:link)
 AM_CPPFLAGS = $(libthrift_CFLAGS) $(MYSQL_CFLAGS) -I$(top_srcdir)/lib/vobla \
 	      -I${top_srcdir}/lib/vsfs \
 	      $(MPI_COMPILE_FLAGS) \
-	      -isystem mongodb/mongo-cxx-driver-v2.4/src
+	      -isystem mongodb/mongo-cxx-driver-nightly/src
 
-AM_LDFLAGS = -Lmongodb/mongo-cxx-driver-v2.4/build $(MPI_LINK_FLAGS) \
+AM_LDFLAGS = -Lmongodb/mongo-cxx-driver-nightly/build $(MPI_LINK_FLAGS) \
 	     -Lvoltdb/voltdb-client-cpp-linux-x86_64-3.0
 
 LDADD = \
@@ -21,12 +21,14 @@ LDADD = \
   ${top_srcdir}/lib/vsfs/vsfs/rpc/libvsfs-rpc.a \
   ${top_srcdir}/lib/vsfs/vsfs/common/libvsfs-common.a \
   ${top_srcdir}/lib/vsfs/lib/vobla/vobla/libvobla.la \
+  -lboost_thread -lmongoclient \
   ${top_srcdir}/voltdb/libvsbench-voltdb.a \
   ${top_srcdir}/voltdb/voltdb-client-cpp-linux-x86_64-3.0/libvoltdbcpp.a \
   ${top_srcdir}/voltdb/voltdb-client-cpp-linux-x86_64-3.0/libevent.a \
   ${top_srcdir}/voltdb/voltdb-client-cpp-linux-x86_64-3.0/libevent_pthreads.a \
   ${MYSQLPP_LIBS} ${BOOST_FILESYSTEM_LIB} ${BOOST_SYSTEM_LIB} \
-  ${libthrift_LIBS} -lmongoclient -lboost_thread -lmpi_cxx
+  ${libthrift_LIBS} \
+  -lmpi_cxx
 
 SUBDIRS = \
   hbase \
