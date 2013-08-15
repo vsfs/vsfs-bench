@@ -18,8 +18,11 @@
 """
 
 from __future__ import print_function, division
+import fabric
 from fabric.api import task, env, execute, roles, run, local, settings, lcd
 from fabric.api import parallel
+from fabric.colors import yellow, blue, green, red
+from multiprocessing import Queue
 import os
 import pymongo
 import shutil
@@ -106,14 +109,15 @@ def start(num_shard):
     os.makedirs(env.data_dir)
 
     execute(start_config_server)
-    print(env.workers)
     execute(start_shared_server, hosts=env.workers[:num_shard])
 
     local('sleep 2')
+    print(yellow('Initialize MongoDB'))
     conn = pymongo.Connection(env.head)
     admin = conn.admin
     for shard in env.workers[:num_shard]:
         admin.command('addshard', shard)
+
 
 
 @task
@@ -122,3 +126,40 @@ def stop():
     """
     execute(stop_shared_server, hosts=env.workers)
     execute(stop_config_server)
+
+
+def _show_processes():
+    """ Show mysql process on remote machine.
+    """
+    run('ps aux | grep mongo | grep -v grep || true')
+
+@task
+def status():
+    """Query the running status of the test cluster.
+    """
+    node_list = list(env.workers)
+    node_list.append(env.head)
+    fabric.state.output['running'] = False
+    fabric.state.output['stderr'] = False
+    execute(_show_processes, hosts=node_list)
+
+
+def insert_records(shard, indices, records):
+    """
+    """
+    print(yellow('Insert records on %d shard, %d indices, %d records.' %
+                 (shard, indices, records)))
+    execute(stop)
+    local('sleep 5')
+    in_q = Queue()
+    execute(start, shard)
+    local('sleep 5')
+
+    execute(stop)
+
+
+@task
+def test_insert(shard, indices, records):
+    """Test inserting performance (param: shard, indices, records)
+    """
+    insert_records(int(shard), int(indices), int(records))
