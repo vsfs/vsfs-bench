@@ -27,7 +27,8 @@ import os
 import pymongo
 import shutil
 import sys
-sys.path.append('..')
+import time
+sys.path.append('../..')
 from fablib import base_dir, download_tarball, run_background
 
 SCRIPT_DIR = os.path.dirname(__file__)
@@ -49,7 +50,7 @@ def load_config():
     env.data_dir = os.path.abspath('testdata/data')
     env.mongo_bin = os.path.join(env.bin_dir, 'mongod')
 
-    with open('../nodes.txt') as fobj:
+    with open('../../nodes.txt') as fobj:
         node_list = [line.strip() for line in fobj]
     env.head = node_list[0]
     env.workers = node_list[1:]
@@ -126,7 +127,17 @@ def start(num_shard):
     print(yellow('MongoDB connected'))
     admin = conn.admin
     for shard in env.workers[:num_shard]:
-        admin.command('addshard', '%s:27017' % shard)
+        retry = 10
+        while retry:
+            try:
+                admin.command('addshard', '%s:27017' % shard)
+                break
+            except pymongo.errors.OperationFailure:
+                retry -= 1
+                if retry == 0:
+                    raise
+                time.sleep(2)
+
     admin.command('enableSharding', 'vsfs')
 
 

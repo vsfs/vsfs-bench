@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 #include "vsfs/common/complex_query.h"
-#include "mongodb/mongodb_driver.h"
+#include "vsbench/mongodb/mongodb_driver.h"
 
 using mongo::BSONObjBuilder;
 using mongo::BSONObj;

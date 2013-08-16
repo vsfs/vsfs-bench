@@ -9,10 +9,11 @@ MPI_LINK_FLAGS = $(shell mpicc --showme:link)
 AM_CPPFLAGS = $(libthrift_CFLAGS) $(MYSQL_CFLAGS) -I$(top_srcdir)/lib/vobla \
 	      -I${top_srcdir}/lib/vsfs \
 	      -I${top_srcdir}/lib/vsfs/lib/gmock-1.6.0/gtest/include \
-	      $(MPI_COMPILE_FLAGS) \
-	      -isystem mongodb/mongo-cxx-driver-nightly/src
+	      -isystem vsbench/mongodb/mongo-cxx-driver-nightly/src \
+	      $(MPI_COMPILE_FLAGS)
 
-AM_LDFLAGS = -Lmongodb/mongo-cxx-driver-nightly/build $(MPI_LINK_FLAGS) \
+AM_LDFLAGS = $(MPI_LINK_FLAGS) \
+	     -Lvsbench/mongodb/mongo-cxx-driver-nightly/build \
 	     -Lvoltdb/voltdb-client-cpp-linux-x86_64-3.0
 
 LDADD = \
@@ -23,6 +24,7 @@ LDADD = \
   ${top_srcdir}/lib/vsfs/vsfs/common/libvsfs-common.a \
   ${top_srcdir}/lib/vsfs/lib/vobla/vobla/libvobla.la \
   -lboost_thread -lmongoclient \
+  ${top_srcdir}/vsbench/mongodb/libvsbench-mongodb.a \
   ${top_srcdir}/voltdb/libvsbench-voltdb.a \
   ${top_srcdir}/voltdb/voltdb-client-cpp-linux-x86_64-3.0/libvoltdbcpp.a \
   ${top_srcdir}/voltdb/voltdb-client-cpp-linux-x86_64-3.0/libevent.a \
@@ -33,7 +35,7 @@ LDADD = \
 
 SUBDIRS = \
   hbase \
-  mongodb \
+  vsbench/mongodb \
   voltdb
 
 noinst_LIBRARIES = libvsfs-vsbench.a
@@ -46,8 +48,6 @@ libvsfs_vsbench_a_SOURCES = \
   hbase/hbase/Hbase_types.h \
   hbase/hbase_driver.cpp \
   hbase/hbase_driver.h \
-  mongodb/mongodb_driver.cpp \
-  mongodb/mongodb_driver.h \
   mysql/mysql_driver.cpp \
   mysql/mysql_driver.h \
   vsbench/driver.cpp \
