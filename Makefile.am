@@ -8,6 +8,7 @@ MPI_LINK_FLAGS = $(shell mpicc --showme:link)
 
 AM_CPPFLAGS = $(libthrift_CFLAGS) $(MYSQL_CFLAGS) -I$(top_srcdir)/lib/vobla \
 	      -I${top_srcdir}/lib/vsfs \
+	      -I${top_srcdir}/lib/vsfs/lib/gmock-1.6.0/gtest/include \
 	      $(MPI_COMPILE_FLAGS) \
 	      -isystem mongodb/mongo-cxx-driver-nightly/src
 

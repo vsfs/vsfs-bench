@@ -30,11 +30,14 @@ import sys
 sys.path.append('..')
 from fablib import base_dir, download_tarball, run_background
 
+SCRIPT_DIR = os.path.dirname(__file__)
 MONGO_VERSION = '2.5.1'
 URL = 'http://fastdl.mongodb.org/linux/' \
       'mongodb-linux-x86_64-%s.tgz' % MONGO_VERSION
 CXX_DRIVER_URL = 'http://downloads.mongodb.org/cxx-driver/' \
                  'mongodb-linux-x86_64-%s.tgz' % MONGO_VERSION
+VSBENCH = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir, 'bin/vsbench'))
+MONGOS_PORT = 27018
 
 
 def load_config():
@@ -60,14 +63,17 @@ load_config()
 def start_config_server():
     """Starts MongoDB config server.
     """
-    run_background('%(mongo_bin)s --configsvr --dbpath %(config_dir)s' % env)
-    run_background('%(bin_dir)s/mongos --configdb %(head)s' % env)
+    run_background('%(mongo_bin)s --configsvr --port 27019 --dbpath %(config_dir)s' % env)
+    run('sleep 2')
+    #run('%(bin_dir)s/mongos --port --configdb %(head)s' % env)
+    run_background('%(bin_dir)s/mongos --port 27018 --configdb %(head)s' % env)
 
 
 @parallel
 def start_shared_server():
+    run('mkdir -p %(data_dir)s/%(host)s' % env)
     run_background('%(mongo_bin)s --shardsvr --port 27017 '
-                   '--dbpath %(data_dir)s' % env)
+                   '--dbpath %(data_dir)s/%(host)s' % env)
 
 
 @roles('head')
@@ -94,6 +100,8 @@ def download():
     with lcd('mongo-cxx-driver-v2.5'):
         local('scons')
 
+
+@roles('head')
 @task
 def start(num_shard):
     """Starts MongoDB cluster.
@@ -111,20 +119,25 @@ def start(num_shard):
     execute(start_config_server)
     execute(start_shared_server, hosts=env.workers[:num_shard])
 
-    local('sleep 2')
+    local('sleep 5')
     print(yellow('Initialize MongoDB'))
-    conn = pymongo.Connection(env.head)
+    conn = pymongo.Connection('%s:27018' % env.head)
+    print(yellow('MongoDB connected'))
     admin = conn.admin
     for shard in env.workers[:num_shard]:
-        admin.command('addshard', shard)
+        admin.command('addshard', '%s:27017' % shard)
+
+    admin.command('enableSharding', 'vsfs')
 
 
-
+@roles('head')
 @task
 def stop():
     """Stops a MongoDB cluster.
     """
+    print(yellow('Stopping shared servers..'))
     execute(stop_shared_server, hosts=env.workers)
+    print(yellow('Stopping config server..'))
     execute(stop_config_server)
 
 
@@ -132,6 +145,7 @@ def _show_processes():
     """ Show mysql process on remote machine.
     """
     run('ps aux | grep mongo | grep -v grep || true')
+
 
 @task
 def status():
@@ -144,6 +158,17 @@ def status():
     execute(_show_processes, hosts=node_list)
 
 
+@roles('head')
+def import_files(num_files):
+    """Build a namespace in MongoDB first.
+    """
+    cmd = '%s -driver mongodb -mongodb_host %s -mongodb_port %d -op import ' \
+          '-records_per_index %d' % \
+          (VSBENCH, env.head, MONGOS_PORT, num_files)
+    print(green('Importing files: running %s' % cmd))
+    run(cmd)
+
+
 def insert_records(shard, indices, records):
     """
     """
@@ -154,8 +179,9 @@ def insert_records(shard, indices, records):
     in_q = Queue()
     execute(start, shard)
     local('sleep 5')
+    execute(import_files, records)
 
-    execute(stop)
+#    execute(stop)
 
 
 @task
