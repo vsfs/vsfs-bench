@@ -63,7 +63,8 @@ load_config()
 def start_config_server():
     """Starts MongoDB config server.
     """
-    run_background('%(mongo_bin)s --configsvr --port 27019 --dbpath %(config_dir)s' % env)
+    run_background('%(mongo_bin)s --configsvr --port 27019 ' \
+                   '--dbpath %(config_dir)s' % env)
     run('sleep 2')
     #run('%(bin_dir)s/mongos --port --configdb %(head)s' % env)
     run_background('%(bin_dir)s/mongos --port 27018 --configdb %(head)s' % env)
@@ -126,7 +127,6 @@ def start(num_shard):
     admin = conn.admin
     for shard in env.workers[:num_shard]:
         admin.command('addshard', '%s:27017' % shard)
-
     admin.command('enableSharding', 'vsfs')
 
 
@@ -181,7 +181,7 @@ def insert_records(shard, indices, records):
     local('sleep 5')
     execute(import_files, records)
 
-#    execute(stop)
+    execute(stop)
 
 
 @task
