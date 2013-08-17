@@ -60,7 +60,7 @@ def test_insert(args):
     for shard in [1]:  # range(2, 18, 4):
         prepare_cluster(shard)
         time.sleep(3)
-        print('Import files.', file=sys.stderr)
+        print('Importing files.', file=sys.stderr)
         check_output('srun %s -driver mongodb -mongodb_host %s -mongodb_port %d'
                      ' -op import -records_per_index %d' %
                      (VSBENCH, fabfile.env['head'], fabfile.MONGOS_PORT,
