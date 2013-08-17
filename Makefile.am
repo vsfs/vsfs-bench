@@ -17,19 +17,18 @@ AM_LDFLAGS = $(MPI_LINK_FLAGS) \
 	     -Lvsbench/mongodb/mongo-cxx-driver-nightly/build
 
 LDADD = \
-  ${top_srcdir}/vsbench/hbase/libvsbench-hbase.a \
   libvsfs-vsbench.a \
+  ${top_srcdir}/vsbench/mongodb/libvsbench-mongodb.a \
+  ${top_srcdir}/vsbench/voltdb/libvsbench-voltdb.a \
+  ${top_srcdir}/vsbench/voltdb/voltdb-client-cpp-linux-x86_64-3.0/libvoltdbcpp.a \
+  ${top_srcdir}/vsbench/voltdb/voltdb-client-cpp-linux-x86_64-3.0/libevent.a \
+  ${top_srcdir}/vsbench/voltdb/voltdb-client-cpp-linux-x86_64-3.0/libevent_pthreads.a \
   ${top_srcdir}/lib/vsfs/vsfs/client/libvsfs-client.a \
   ${top_srcdir}/lib/vsfs/vsfs/index/libvsfs-index.a \
   ${top_srcdir}/lib/vsfs/vsfs/rpc/libvsfs-rpc.a \
   ${top_srcdir}/lib/vsfs/vsfs/common/libvsfs-common.a \
   ${top_srcdir}/lib/vsfs/lib/vobla/vobla/libvobla.la \
   -lboost_thread -lmongoclient \
-  ${top_srcdir}/vsbench/mongodb/libvsbench-mongodb.a \
-  ${top_srcdir}/vsbench/voltdb/libvsbench-voltdb.a \
-  ${top_srcdir}/vsbench/voltdb/voltdb-client-cpp-linux-x86_64-3.0/libvoltdbcpp.a \
-  ${top_srcdir}/vsbench/voltdb/voltdb-client-cpp-linux-x86_64-3.0/libevent.a \
-  ${top_srcdir}/vsbench/voltdb/voltdb-client-cpp-linux-x86_64-3.0/libevent_pthreads.a \
   ${MYSQLPP_LIBS} ${BOOST_FILESYSTEM_LIB} ${BOOST_SYSTEM_LIB} \
   ${libthrift_LIBS} -lmpi_cxx
 
@@ -42,6 +41,14 @@ noinst_LIBRARIES = libvsfs-vsbench.a
 libvsfs_vsbench_a_SOURCES = \
   vsbench/driver.cpp \
   vsbench/driver.h \
+  vsbench/hbase/hbase/Hbase.cpp \
+  vsbench/hbase/hbase/Hbase.h \
+  vsbench/hbase/hbase/Hbase_constants.cpp \
+  vsbench/hbase/hbase/Hbase_constants.h \
+  vsbench/hbase/hbase/Hbase_types.cpp \
+  vsbench/hbase/hbase/Hbase_types.h \
+  vsbench/hbase/hbase_driver.cpp \
+  vsbench/hbase/hbase_driver.h \
   vsbench/mysql/mysql_driver.cpp \
   vsbench/mysql/mysql_driver.h \
   vsbench/util.cpp \

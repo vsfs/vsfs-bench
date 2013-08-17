@@ -142,9 +142,11 @@ def start(num_shard):
     db = conn.vsfs
     collection = db['test']
     collection.create_index([("file", pymongo.ASCENDING)])
+    collection.ensure_index("file")
     for i in range(0, 61):
         collection.create_index([("index" + str(i), pymongo.ASCENDING)])
     admin.command('enableSharding', 'vsfs')
+    admin.command('shardCollection', 'vsfs.test', key={'file': 'hashed'})
 
 
 @roles('head')

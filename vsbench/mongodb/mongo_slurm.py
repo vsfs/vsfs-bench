@@ -40,6 +40,7 @@ def destory_cluster():
 def test_insert(args):
     """Test inserting benchmark
     """
+    num_indices = 63
     def mpirun(args):
         if args.mpi:
             cmd = 'mpirun --mca orte_base_help_aggregate 0 '
@@ -49,7 +50,7 @@ def test_insert(args):
                ' -%s_host %s -%s_port %d -op insert ' \
                '-num_indices 2 -records_per_index %d' % \
                (VSBENCH, args.driver, args.driver, fabfile.env['head'],
-                args.driver, fabfile.MONGOS_PORT, args.total / 63)
+                args.driver, fabfile.MONGOS_PORT, args.total / num_indices)
         if args.mpi:
             cmd += ' -mpi_barrier'
         print(cmd)
@@ -57,14 +58,14 @@ def test_insert(args):
 
     destory_cluster()
     time.sleep(3)
-    for shard in [1]:  # range(2, 18, 4):
+    for shard in range(2, 21, 2):
         prepare_cluster(shard)
         time.sleep(3)
         print('Importing files.', file=sys.stderr)
         check_output('srun %s -driver mongodb -mongodb_host %s -mongodb_port %d'
                      ' -op import -records_per_index %d' %
                      (VSBENCH, fabfile.env['head'], fabfile.MONGOS_PORT,
-                     args.total / 63),
+                     args.total / num_indices),
                      shell=True)
         print('Run insert for %d shard' % shard, file=sys.stderr)
         start_time = time.time()
