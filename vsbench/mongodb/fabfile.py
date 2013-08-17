@@ -37,7 +37,7 @@ URL = 'http://fastdl.mongodb.org/linux/' \
       'mongodb-linux-x86_64-%s.tgz' % MONGO_VERSION
 CXX_DRIVER_URL = 'http://downloads.mongodb.org/cxx-driver/' \
                  'mongodb-linux-x86_64-%s.tgz' % MONGO_VERSION
-VSBENCH = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir, 'bin/vsbench'))
+VSBENCH = os.path.abspath(os.path.join(SCRIPT_DIR, '../../bin/vsbench'))
 MONGOS_PORT = 27018
 
 
@@ -110,6 +110,7 @@ def start(num_shard):
 
     @param num_shard the number of shard servers.
     """
+    print(yellow('Starting MongoDB instance..'))
     num_shard = int(num_shard)
     download_tarball(URL)
 
@@ -138,6 +139,11 @@ def start(num_shard):
                     raise
                 time.sleep(2)
 
+    db = conn.vsfs
+    collection = db['test']
+    collection.create_index([("file", pymongo.ASCENDING)])
+    for i in range(0, 61):
+        collection.create_index([("index" + str(i), pymongo.ASCENDING)])
     admin.command('enableSharding', 'vsfs')
 
 

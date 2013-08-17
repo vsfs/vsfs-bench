@@ -43,7 +43,7 @@ DEFINE_string(driver, "", "Sets the test driver "
              "(hbase/mysql/voltdb/mongodb/vsfs)");
 DEFINE_string(indices, "", "Sets the indices to operate on, e.g., "
               "3,4-7,8,9.");
-DEFINE_int32(num_indices, 64, "Sets the number of indices");
+DEFINE_int32(num_indices, 64, "Sets the total number of indices.");
 DEFINE_int64(records_per_index, 100000, "Sets the number of records in each "
              " index.");
 DEFINE_string(path, "/foo/bar", "Sets the path to create indices.");
@@ -115,6 +115,7 @@ Status create_indices() {
   }
   VLOG(1) << "Connected to db...";
 
+  LOG(ERROR) << "START TO INSERT";
   int index_type = vsfs::index::IndexInfo::BTREE;
   int key_type = UINT64;
   for (int i = 0; i < FLAGS_num_indices; ++i) {
@@ -150,7 +151,7 @@ Status insert_records(const vector<string> &index_names) {
   }
 
   for (const auto& index_name : index_names) {
-    VLOG(1) << "Insert record for: " << index_name;
+    LOG(ERROR) << "Insert record for: " << index_name;
     status = Util::insert_files(driver.get(), FLAGS_path, index_name,
                                 FLAGS_records_per_index);
     if (!status.ok()) {
@@ -239,6 +240,7 @@ void populate() {
       LOG(ERROR) << error_message;
       return;
     }
+
     for (auto idx : indices) {
       string index_name = "index" + lexical_cast<string>(idx);
       VLOG(1) << "Connect to populate records for " << index_name;
@@ -257,6 +259,7 @@ void populate() {
  * \brief Test Inserting Performance.
  */
 void test_insert() {
+  LOG(ERROR) << "Test insert.";
   if (!FLAGS_stdin) {
     vector<int> indices;
     if (!FLAGS_indices.empty()) {
@@ -268,14 +271,16 @@ void test_insert() {
     }
     Timer timer;
     if (FLAGS_mpi_barrier) {
-      MPI_Barrier(MPI_COMM_WORLD);
+      LOG(ERROR) << "Before barrier";
+      // MPI_Barrier(MPI_COMM_WORLD);
       if (mpi_rank == 0) {
         timer.start();
       }
     }
+    LOG(ERROR) << "Insert into indices..";
     insert_records_in_thread_pool(indices);
     if (FLAGS_mpi_barrier) {
-      MPI_Barrier(MPI_COMM_WORLD);
+      // MPI_Barrier(MPI_COMM_WORLD);
       if (mpi_rank == 0) {
         timer.stop();
         LOG(INFO) << "INSERT TIME: " << timer.get_in_second();
@@ -429,8 +434,8 @@ int main(int argc, char* argv[]) {
   if (FLAGS_mpi_barrier) {
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-
     MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+    LOG(ERROR) << "MPI INIT, my rank=" << mpi_rank;
     if (mpi_rank == 0) {
       LOG(INFO) << "Total MPI tasks: " << mpi_size;
     }
@@ -467,8 +472,6 @@ int main(int argc, char* argv[]) {
     ret = 1;
   }
 
-  if (FLAGS_mpi_barrier) {
-    MPI_Finalize();
-  }
+  MPI_Finalize();
   return ret;
 }

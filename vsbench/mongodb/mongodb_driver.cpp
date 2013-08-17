@@ -39,7 +39,6 @@ Status MongoDBDriver::init() {
     return status;
   }
   clear();
-  db_conn_.ensureIndex(kTestCollection, BSON("file" << 1));
   return Status::OK;
 }
 
@@ -58,7 +57,7 @@ Status MongoDBDriver::connect() {
 Status MongoDBDriver::create_index(const string &path, const string &name,
                                    int index_type, int key_type) {
   auto p = BSON(name << 1);
-  db_conn_.ensureIndex(kTestCollection, p);
+  string collection = kTestCollection;
   return Status::OK;
 }
 
@@ -113,7 +112,7 @@ Status MongoDBDriver::search(const ComplexQuery& query,
 }
 
 Status MongoDBDriver::clear() {
-  db_conn_.dropCollection(kTestCollection);
+  //db_conn_.dropCollection(kTestCollection);
   return Status::OK;
 }
 
