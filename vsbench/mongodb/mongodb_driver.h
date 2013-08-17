@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MONGODB_MONGODB_DRIVER_H_
-#define MONGODB_MONGODB_DRIVER_H_
+#ifndef VSBENCH_MONGODB_MONGODB_DRIVER_H_
+#define VSBENCH_MONGODB_MONGODB_DRIVER_H_
 
 #include <memory>
 #include <string>
@@ -42,7 +42,7 @@ class MongoDBDriver : public Driver {
 
   Status connect();
 
-  Status create_index(const string &path, const string &name,
+  Status create_index(const string& path, const string& name,
                       int index_type, int key_type);
 
   Status import(const vector<string>& files);
@@ -61,4 +61,4 @@ class MongoDBDriver : public Driver {
 }  // namespace vsbench
 }  // namespace vsfs
 
-#endif  // MONGODB_MONGODB_DRIVER_H_
+#endif  // VSBENCH_MONGODB_MONGODB_DRIVER_H_

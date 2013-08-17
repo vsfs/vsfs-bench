@@ -19,13 +19,14 @@
 #include <string>
 #include <vector>
 #include "vsfs/common/complex_query.h"
-#include "mongodb/mongodb_driver.h"
+#include "vsbench/mongodb/mongodb_driver.h"
 
 using mongo::BSONObjBuilder;
 using mongo::BSONObj;
 using std::vector;
 
 DEFINE_string(mongodb_host, "localhost", "Sets the mongodb host to connect");
+DEFINE_int32(mongodb_port, 27017, "Sets the mongodb port to connect");
 
 const char* kTestCollection = "vsfs.test";
 
@@ -44,7 +45,8 @@ Status MongoDBDriver::init() {
 
 Status MongoDBDriver::connect() {
   try {
-    db_conn_.connect(FLAGS_mongodb_host);
+    db_conn_.connect(FLAGS_mongodb_host + ":"
+                     + std::to_string(FLAGS_mongodb_port));
   } catch (const mongo::DBException &e) {  // NOLINT
     LOG(ERROR) << "Failed to connect MongoDB " << FLAGS_mongodb_host
                << " because " << e.what();
@@ -61,13 +63,13 @@ Status MongoDBDriver::create_index(const string &path, const string &name,
 }
 
 Status MongoDBDriver::import(const vector<string>& files) {
+  db_conn_.setWriteConcern(mongo::W_NORMAL);
   vector<BSONObj> buffer;
   for (const auto& file : files) {
     auto bson_obj = BSON("file" << file);
     buffer.push_back(bson_obj);
     // TODO(lxu): use a FLAGS to customize the buffer size.
     if (buffer.size() % 1024 == 0) {
-      VLOG(0) << "Import 1024 records to MongoDB.";
       db_conn_.insert(kTestCollection, buffer);
       buffer.clear();
     }
