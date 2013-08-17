@@ -49,10 +49,10 @@ libvsfs_vsbench_a_SOURCES = \
   hbase/hbase/Hbase_types.h \
   hbase/hbase_driver.cpp \
   hbase/hbase_driver.h \
-  mysql/mysql_driver.cpp \
-  mysql/mysql_driver.h \
   vsbench/driver.cpp \
   vsbench/driver.h \
+  vsbench/mysql/mysql_driver.cpp \
+  vsbench/mysql/mysql_driver.h \
   vsbench/util.cpp \
   vsbench/util.h \
   vsfs/vsfs_driver.cpp \

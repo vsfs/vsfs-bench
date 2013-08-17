@@ -26,9 +26,9 @@
 #include <utility>
 #include <vector>
 #include "vobla/status.h"
-#include "vsfs/common/path_util.h"
+#include "vsbench/mysql/mysql_driver.h"
 #include "vsfs/common/complex_query.h"
-#include "mysql/mysql_driver.h"
+#include "vsfs/common/path_util.h"
 
 namespace fs = boost::filesystem;
 using std::map;
