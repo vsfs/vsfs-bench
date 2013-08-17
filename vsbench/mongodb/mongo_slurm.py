@@ -12,7 +12,6 @@
 
 from __future__ import print_function
 from subprocess import check_output
-from fabric.api import execute
 from fabric.colors import yellow, red
 import argparse
 import os
@@ -32,6 +31,7 @@ def get_slurm_params():
     params['id'] = int(os.getenv('SLURM_LOCALID'))
     return params
 
+
 def prepare_cluster(num_shard):
     """
     """
@@ -44,46 +44,40 @@ def destory_cluster():
     check_output('fab -f %s stop' % (FABFILE), shell=True)
 
 
-def run_insert(args):
-    pass
-
-def create_indices(args):
-    """Creates 64 indices.
-    """
-    cmd = '%s -driver %s -%s_host %s -%s_port %d -op create_indices' % \
-          (VSBENCH, args.driver, args.driver, fabfile.env['head'], args.driver,
-           fabfile.MONGOS_PORT)
-    check_output(cmd, shell=True)
-
 def test_insert(args):
     """Test inserting benchmark
     """
     def mpirun(args):
-        #cmd = 'mpirun --mca orte_base_help_aggregate 0 '
-        cmd = 'srun '
+        if args.mpi:
+            cmd = 'mpirun --mca orte_base_help_aggregate 0 '
+        else:
+            cmd = 'srun '
         cmd += '%s -driver %s' \
-                ' -%s_host %s -%s_port %d -op insert ' \
-                '-num_indices 63 -records_per_index %d' % \
-                (VSBENCH, args.driver, args.driver, fabfile.env['head'],
-                 args.driver, fabfile.MONGOS_PORT, total_records / 63)
-        #cmd += ' -mpi_barrier'
+               ' -%s_host %s -%s_port %d -op insert ' \
+               '-num_indices 2 -records_per_index %d' % \
+               (VSBENCH, args.driver, args.driver, fabfile.env['head'],
+                args.driver, fabfile.MONGOS_PORT, args.total / 63)
+        if args.mpi:
+            cmd += ' -mpi_barrier'
         print(cmd)
         check_output(cmd, shell=True)
 
-    total_records = 10**7  # 10M
     destory_cluster()
     time.sleep(3)
-    for shard in [1]: #range(2, 18, 4):
+    for shard in [1]:  # range(2, 18, 4):
         prepare_cluster(shard)
         time.sleep(3)
-        #create_indices(args)
         print('Import files.', file=sys.stderr)
-        execute(fabfile.import_files, total_records / 63)
+        check_output('srun %s -driver mongodb -mongodb_host %s -mongodb_port %d'
+                     ' -op import -records_per_index %d' %
+                     (VSBENCH, fabfile.env['head'], fabfile.MONGOS_PORT,
+                     args.total / 63),
+                     shell=True)
         print('Run insert for %d shard' % shard, file=sys.stderr)
         start_time = time.time()
         mpirun(args)
         end_time = time.time()
-        print('%d %d' % (shard, end_time - start_time))
+        print('%d %0.2f' % (shard, end_time - start_time))
         destory_cluster()
 
 
@@ -97,11 +91,12 @@ def main():
                         choices=['mongodb', 'hbase', 'mysql'])
     subparsers = parser.add_subparsers(help='Available tests')
 
-    parser_run = subparsers.add_parser('run', help='Called by mpirun/srun')
-    parser_run.set_defaults(func=run_insert)
-
     parser_insert = subparsers.add_parser('insert',
                                           help='test inserting performance')
+    parser_insert.add_argument('-t', '--total', type=int, default=10**7,
+                               help='Total number of index records.')
+    parser_insert.add_argument('--mpi', action="store_true", default=False,
+                               help='Use MPI to synchronize clients.')
     parser_insert.set_defaults(func=test_insert)
 
     args = parser.parse_args()
