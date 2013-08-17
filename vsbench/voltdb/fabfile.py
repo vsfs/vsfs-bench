@@ -5,7 +5,7 @@ from __future__ import print_function, division
 from fabric.api import task, env, local
 import os
 import sys
-sys.path.append('..')
+sys.path.append('../..')
 from fablib import base_dir, download_tarball
 
 VERSION = '3.4'

@@ -24,7 +24,7 @@
 #include "vsfs/rpc/rpc_client.h"
 #include "vsfs/rpc/vsfs_types.h"
 #include "vsbench/driver.h"
-#include "hbase/hbase/Hbase.h"
+#include "vsbench/hbase/hbase/Hbase.h"
 
 using std::string;
 using std::unique_ptr;

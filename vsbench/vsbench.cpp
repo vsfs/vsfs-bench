@@ -246,7 +246,6 @@ void import() {
 
 /**
  * \brief Populates Table in parallal.
- *
  */
 void populate() {
   // create_indices();

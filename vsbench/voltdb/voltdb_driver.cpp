@@ -26,7 +26,7 @@
 #include <gflags/gflags.h>
 #include <string>
 #include <vector>
-#include "voltdb/voltdb_driver.h"
+#include "vsbench/voltdb/voltdb_driver.h"
 #include "vsfs/common/path_util.h"
 
 using std::string;

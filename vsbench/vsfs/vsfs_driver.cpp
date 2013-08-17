@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 #include "vsfs/client/vsfs_client.h"
-#include "vsfs/vsfs_driver.h"
+#include "vsbench/vsfs/vsfs_driver.h"
 
 using boost::lexical_cast;
 using std::string;

@@ -19,11 +19,11 @@
 #include <algorithm>
 #include <string>
 #include "hbase/hbase_driver.h"
-#include "mysql/mysql_driver.h"
 #include "voltdb/voltdb_driver.h"
 #include "vsbench/driver.h"
 #include "vsbench/mongodb/mongodb_driver.h"
-#include "vsfs/vsfs_driver.h"
+#include "vsbench/mysql/mysql_driver.h"
+#include "vsbench/vsfs/vsfs_driver.h"
 
 using std::string;
 namespace fs = boost::filesystem;

@@ -15,7 +15,7 @@ import os
 import sys
 import time
 import yaml
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append('../..')
 from fablib import base_dir, download_tarball, create_indices
 import fablib
 
@@ -26,7 +26,7 @@ HADOOP_URL = 'http://www.trieuvan.com/apache/hadoop/common/stable/' + \
 
 HBASE_URL = ("http://mirror.reverse.net/pub/apache/hbase/hbase-%s/" +
              "hbase-%s.tar.gz") % (VERSION, VERSION)
-NODE_FILE = os.path.abspath(os.path.join(SCRIPT_DIR, '..', 'nodes.txt'))
+NODE_FILE = os.path.abspath(os.path.join(SCRIPT_DIR, '..', '..', 'nodes.txt'))
 VSBENCH = os.path.abspath('../vsbench')
 RETRY = 10
 DATA_DIR = '/scratch/datadir'
