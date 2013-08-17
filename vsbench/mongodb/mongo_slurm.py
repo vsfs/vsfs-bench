@@ -25,13 +25,6 @@ VSBENCH = fabfile.VSBENCH
 FABFILE = os.path.join(SCRIPT_DIR, 'fabfile.py')
 
 
-def get_slurm_params():
-    params = {}
-    params['tasks'] = int(os.getenv('SLURM_NTASKS'))
-    params['id'] = int(os.getenv('SLURM_LOCALID'))
-    return params
-
-
 def prepare_cluster(num_shard):
     """
     """
