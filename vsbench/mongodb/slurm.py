@@ -37,11 +37,14 @@ def destory_cluster():
     check_output('fab -f %s stop' % (FABFILE), shell=True)
 
 
-def test_insert(args):
-    """Test inserting benchmark
+def test_index(args):
+    """Test indexing performance
     """
     num_indices = 63
+
     def mpirun(args):
+        """
+        """
         if args.mpi:
             cmd = 'mpirun --mca orte_base_help_aggregate 0 '
         else:
@@ -58,20 +61,21 @@ def test_insert(args):
 
     destory_cluster()
     time.sleep(3)
-    for shard in range(2, 21, 2):
+    shard_confs = map(int, args.shards.split(','))
+    for shard in shard_confs:
         prepare_cluster(shard)
         time.sleep(3)
         print('Importing files.', file=sys.stderr)
-        check_output('srun %s -driver mongodb -mongodb_host %s -mongodb_port %d'
-                     ' -op import -records_per_index %d' %
+        check_output('srun %s -driver mongodb -mongodb_host %s '
+                     '-mongodb_port %d -op import -records_per_index %d' %
                      (VSBENCH, fabfile.env['head'], fabfile.MONGOS_PORT,
-                     args.total / num_indices),
+                      args.total / num_indices),
                      shell=True)
         print('Run insert for %d shard' % shard, file=sys.stderr)
         start_time = time.time()
         mpirun(args)
         end_time = time.time()
-        print('%d %0.2f' % (shard, end_time - start_time))
+        print('%d %d %0.2f' % (shard, args.total, end_time - start_time))
         destory_cluster()
 
 
@@ -85,13 +89,19 @@ def main():
                         choices=['mongodb', 'hbase', 'mysql'])
     subparsers = parser.add_subparsers(help='Available tests')
 
-    parser_insert = subparsers.add_parser('insert',
-                                          help='test inserting performance')
-    parser_insert.add_argument('-t', '--total', type=int, default=10**7,
-                               help='Total number of index records.')
-    parser_insert.add_argument('--mpi', action="store_true", default=False,
-                               help='Use MPI to synchronize clients.')
-    parser_insert.set_defaults(func=test_insert)
+    parser_index = subparsers.add_parser(
+        'index', help='test indexing performance')
+    parser_index.add_argument(
+        '-t', '--total', type=int, default=10**7, metavar='NUM',
+        help='Total number of index records (default: %(default)d).')
+    parser_index.add_argument(
+        '-s', '--shards', metavar='N0,N1,N2..',
+        default=','.join(map(str, range(2, 21, 2))),
+        help='Comma separated string of the numbers of shared servers to '
+        'test against (default: "%(default)s").')
+    parser_index.add_argument('--mpi', action="store_true", default=False,
+                              help='Use MPI to synchronize clients.')
+    parser_index.set_defaults(func=test_index)
 
     args = parser.parse_args()
     args.func(args)
