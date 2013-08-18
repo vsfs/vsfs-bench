@@ -59,6 +59,7 @@ def test_index(args):
         print(cmd)
         check_output(cmd, shell=True)
 
+    args.output.write("# Shard\tTotal\tLatency\n")
     destory_cluster()
     time.sleep(3)
     shard_confs = map(int, args.shards.split(','))
@@ -75,8 +76,9 @@ def test_index(args):
         start_time = time.time()
         mpirun(args)
         end_time = time.time()
-        print('%d %d %0.2f' % (shard, args.total, end_time - start_time))
-        sys.stdout.flush()
+        args.output.write('%d %d %0.2f\n' % \
+                          (shard, args.total, end_time - start_time))
+        args.output.flush()
         destory_cluster()
 
 
@@ -99,9 +101,10 @@ def test_search(args):
         print(cmd, file=sys.stderr)
         check_output(cmd, shell=True)
 
+    args.output.write("# Shard Latency\n")
+    shard_confs = map(int, args.shards.split(','))
     destory_cluster()
     time.sleep(3)
-    shard_confs = map(int, args.shards.split(','))
     for shard in shard_confs:
         prepare_cluster(shard)
         time.sleep(3)
@@ -120,9 +123,10 @@ def test_search(args):
         start_time = time.time()
         mpirun(args)
         end_time = time.time()
-        print('%d %0.2f' % (shard, end_time - start_time))
-        sys.stdout.flush()
+        args.output.write('%d %0.2f\n' % (shard, end_time - start_time))
+        args.output.flush()
         destory_cluster()
+    args.output.close()
 
 
 def main():
@@ -138,8 +142,12 @@ def main():
         default=','.join(map(str, range(2, 21, 2))),
         help='Comma separated string of the numbers of shared servers to '
         'test against (default: "%(default)s").')
-    parser.add_argument('-o', '--output', default='', metavar='FILE',
+    parser.add_argument('--mpi', action="store_true", default=False,
+                              help='Use MPI to synchronize clients.')
+    parser.add_argument('-o', '--output', type=argparse.FileType('w'),
+                        default=sys.stdout, metavar='FILE',
                         help='set output file (default: stdout)')
+
     subparsers = parser.add_subparsers(help='Available tests')
 
     parser_index = subparsers.add_parser(
@@ -147,8 +155,6 @@ def main():
     parser_index.add_argument(
         '-t', '--total', type=int, default=10**7, metavar='NUM',
         help='Total number of index records (default: %(default)d).')
-    parser_index.add_argument('--mpi', action="store_true", default=False,
-                              help='Use MPI to synchronize clients.')
     parser_index.set_defaults(func=test_index)
 
     parser_search = subparsers.add_parser(
