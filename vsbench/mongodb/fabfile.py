@@ -32,6 +32,7 @@ sys.path.append('..')
 from fablib import base_dir, download_tarball, run_background
 
 SCRIPT_DIR = os.path.dirname(__file__)
+NODES_FILE = os.path.join(SCRIPT_DIR, '..', '..', 'nodes.txt')
 MONGO_VERSION = '2.5.1'
 URL = 'http://fastdl.mongodb.org/linux/' \
       'mongodb-linux-x86_64-%s.tgz' % MONGO_VERSION
@@ -50,7 +51,7 @@ def load_config():
     env.data_dir = os.path.abspath('testdata/data')
     env.mongo_bin = os.path.join(env.bin_dir, 'mongod')
 
-    with open('../../nodes.txt') as fobj:
+    with open(NODES_FILE) as fobj:
         node_list = [line.strip() for line in fobj]
     env.head = node_list[0]
     env.workers = node_list[1:]
