@@ -41,6 +41,19 @@ def destory_cluster(driver):
         local('fab stop')
 
 
+def mpirun(cmd, mpi=False, debug=False):
+    if mpi:
+        run_cmd = 'mpirun --mca orte_base_help_aggregate 0 '
+    else:
+        run_cmd = 'srun '
+    run_cmd += cmd
+    if mpi:
+        cmd += ' -mpi'
+    if debug:
+        print(cmd, file=sys.stderr)
+    check_output(run_cmd, shell=True)
+
+
 def test_index(args):
     """Test indexing performance
     """
@@ -53,11 +66,10 @@ def test_index(args):
             cmd = 'mpirun --mca orte_base_help_aggregate 0 '
         else:
             cmd = 'srun '
-        cmd += '%s -driver %s' \
-               ' -%s_host %s -%s_port %d -op insert ' \
+        cmd += '%s -driver %s -%s_host %s -op insert ' \
                '-num_indices 2 -records_per_index %d' % \
                (VSBENCH, args.driver, args.driver, fabfile.env['head'],
-                args.driver, fabfile.MONGOS_PORT, args.total / num_indices)
+                args.total / num_indices)
         if args.mpi:
             cmd += ' -mpi'
         print(cmd)
