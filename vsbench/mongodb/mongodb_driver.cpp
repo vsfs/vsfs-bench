@@ -26,7 +26,7 @@ using mongo::BSONObj;
 using std::vector;
 
 DEFINE_string(mongodb_host, "localhost", "Sets the mongodb host to connect");
-DEFINE_int32(mongodb_port, 27017, "Sets the mongodb port to connect");
+DEFINE_int32(mongodb_port, 27018, "Sets the mongodb port to connect");
 
 const char* kTestCollection = "vsfs.test";
 
@@ -112,7 +112,7 @@ Status MongoDBDriver::search(const ComplexQuery& query,
 }
 
 Status MongoDBDriver::clear() {
-  //db_conn_.dropCollection(kTestCollection);
+  db_conn_.dropCollection(kTestCollection);
   return Status::OK;
 }
 

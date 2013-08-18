@@ -55,7 +55,7 @@ def test_index(args):
                (VSBENCH, args.driver, args.driver, fabfile.env['head'],
                 args.driver, fabfile.MONGOS_PORT, args.total / num_indices)
         if args.mpi:
-            cmd += ' -mpi_barrier'
+            cmd += ' -mpi'
         print(cmd)
         check_output(cmd, shell=True)
 
@@ -76,6 +76,52 @@ def test_index(args):
         mpirun(args)
         end_time = time.time()
         print('%d %d %0.2f' % (shard, args.total, end_time - start_time))
+        sys.stdout.flush()
+        destory_cluster()
+
+
+def test_search(args):
+    """Test search performance
+    """
+    def mpirun(args):
+        """
+        """
+        if args.mpi:
+            cmd = 'mpirun --mca orte_base_help_aggregate 0 '
+        else:
+            cmd = 'srun '
+        cmd += '%s -driver %s -%s_host %s -%s_port %d -op open_search' \
+               ' -num_indices 20' % \
+               (VSBENCH, args.driver, args.driver, fabfile.env['head'],
+                args.driver, fabfile.MONGOS_PORT)
+        if args.mpi:
+            cmd += ' -mpi'
+        print(cmd, file=sys.stderr)
+        check_output(cmd, shell=True)
+
+    destory_cluster()
+    time.sleep(3)
+    shard_confs = map(int, args.shards.split(','))
+    for shard in shard_confs:
+        prepare_cluster(shard)
+        time.sleep(3)
+        print(yellow('Populating namespace...'), file=sys.stderr)
+        print(yellow('Importing files...'), file=sys.stderr)
+        check_output('srun %s -driver mongodb -mongodb_host %s '
+                     '-mongodb_port %d -op import -records_per_index 100000' %
+                     (VSBENCH, fabfile.env['head'], fabfile.MONGOS_PORT),
+                     shell=True)
+        print(yellow('Building 100 indices, each 100,000 records..'),
+              file=sys.stderr)
+        check_output('srun -n 10 %s -driver mongodb -mongodb_host %s -op insert'
+                     ' -num_indices 10 -records_per_index 100000' % \
+                     (VSBENCH, fabfile.env['head']),
+                     shell=True)
+        start_time = time.time()
+        mpirun(args)
+        end_time = time.time()
+        print('%d %0.2f' % (shard, end_time - start_time))
+        sys.stdout.flush()
         destory_cluster()
 
 
@@ -87,6 +133,13 @@ def main():
         description='Run VSFS benchmark on sandhills (SLURM).')
     parser.add_argument('-d', '--driver', default='mongodb',
                         choices=['mongodb', 'hbase', 'mysql'])
+    parser.add_argument(
+        '-s', '--shards', metavar='N0,N1,N2..',
+        default=','.join(map(str, range(2, 21, 2))),
+        help='Comma separated string of the numbers of shared servers to '
+        'test against (default: "%(default)s").')
+    parser.add_argument('-o', '--output', default='', metavar='FILE',
+                        help='set output file (default: stdout)')
     subparsers = parser.add_subparsers(help='Available tests')
 
     parser_index = subparsers.add_parser(
@@ -94,14 +147,13 @@ def main():
     parser_index.add_argument(
         '-t', '--total', type=int, default=10**7, metavar='NUM',
         help='Total number of index records (default: %(default)d).')
-    parser_index.add_argument(
-        '-s', '--shards', metavar='N0,N1,N2..',
-        default=','.join(map(str, range(2, 21, 2))),
-        help='Comma separated string of the numbers of shared servers to '
-        'test against (default: "%(default)s").')
     parser_index.add_argument('--mpi', action="store_true", default=False,
                               help='Use MPI to synchronize clients.')
     parser_index.set_defaults(func=test_index)
+
+    parser_search = subparsers.add_parser(
+        'search', help='test searching performance')
+    parser_search.set_defaults(func=test_search)
 
     args = parser.parse_args()
     args.func(args)

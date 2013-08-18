@@ -288,7 +288,6 @@ void populate() {
  * \brief Test Inserting Performance.
  */
 void test_insert() {
-  LOG(ERROR) << "Test insert.";
   if (!FLAGS_stdin) {
     vector<int> indices;
     if (!FLAGS_indices.empty()) {
@@ -300,16 +299,14 @@ void test_insert() {
     }
     Timer timer;
     if (FLAGS_mpi) {
-      LOG(ERROR) << "Before barrier";
-      // MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Barrier(MPI_COMM_WORLD);
       if (mpi_rank == 0) {
         timer.start();
       }
     }
-    LOG(ERROR) << "Insert into indices..";
     insert_records_in_thread_pool(indices);
     if (FLAGS_mpi) {
-      // MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Barrier(MPI_COMM_WORLD);
       if (mpi_rank == 0) {
         timer.stop();
         LOG(INFO) << "INSERT TIME: " << timer.get_in_second();
@@ -427,7 +424,6 @@ void test_open_search() {
           }
         } catch (...) {  // NOLINT
         }
-
 
         string query = string("/foo/bar/?index") + lexical_cast<string>(i)
                        + "<1000";
