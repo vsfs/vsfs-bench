@@ -84,6 +84,7 @@ def test_index(args):
 
 def test_search(args):
     args.output.write("# Shard Latency\n")
+    num_files = args.nfiles
     shard_confs = map(int, args.shards.split(','))
     destory_cluster()
     time.sleep(3)
@@ -93,14 +94,15 @@ def test_search(args):
         print(yellow('Populating namespace...'), file=sys.stderr)
         print(yellow('Importing files...'), file=sys.stderr)
         check_output('srun %s -driver mongodb -mongodb_host %s '
-                     '-mongodb_port %d -op import -records_per_index 100000' %
-                     (VSBENCH, fabfile.env['head'], fabfile.MONGOS_PORT),
+                     '-mongodb_port %d -op import -records_per_index %s' %
+                     (VSBENCH, fabfile.env['head'], fabfile.MONGOS_PORT,
+                      num_files),
                      shell=True)
-        print(yellow('Building 20 indices, each 100,000 records..'),
+        print(yellow('Building 2 indices, each %d records..' % num_files),
               file=sys.stderr)
         check_output('srun -n 2 %s -driver mongodb -mongodb_host %s '
-                     '-op insert -num_indices 1 -records_per_index 50000' %
-                     (VSBENCH, fabfile.env['head']),
+                     '-op insert -num_indices 1 -records_per_index %s' %
+                     (VSBENCH, fabfile.env['head'], num_files),
                      shell=True)
         start_time = time.time()
         check_output('%s -driver mongodb -mongodb_host %s -op search '
@@ -192,6 +194,9 @@ def main():
 
     parser_search = subparsers.add_parser(
         'search', help='test searching performance')
+    parser_search.add_argument(
+        '-n', '--nfiles', type=int, default=100000, metavar='NUM',
+        help='set number of files (default: %(default)d)')
     parser_search.set_defaults(func=test_search)
 
     parser_open_search = subparsers.add_parser(
