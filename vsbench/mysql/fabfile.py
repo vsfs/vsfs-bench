@@ -209,7 +209,7 @@ def _show_processes():
 
 
 @task
-def status():
+def ps():
     """Query the status of the test cluster.
     """
     node_list = list(env.workers)

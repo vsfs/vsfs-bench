@@ -76,14 +76,47 @@ def test_index(args):
         start_time = time.time()
         mpirun(args)
         end_time = time.time()
-        args.output.write('%d %d %0.2f\n' % \
+        args.output.write('%d %d %0.2f\n' %
                           (shard, args.total, end_time - start_time))
         args.output.flush()
         destory_cluster()
 
 
 def test_search(args):
-    """Test search performance
+    args.output.write("# Shard Latency\n")
+    shard_confs = map(int, args.shards.split(','))
+    destory_cluster()
+    time.sleep(3)
+    for shard in shard_confs:
+        prepare_cluster(shard)
+        time.sleep(3)
+        print(yellow('Populating namespace...'), file=sys.stderr)
+        print(yellow('Importing files...'), file=sys.stderr)
+        check_output('srun %s -driver mongodb -mongodb_host %s '
+                     '-mongodb_port %d -op import -records_per_index 100000' %
+                     (VSBENCH, fabfile.env['head'], fabfile.MONGOS_PORT),
+                     shell=True)
+        print(yellow('Building 20 indices, each 100,000 records..'),
+              file=sys.stderr)
+        check_output('srun -n 2 %s -driver mongodb -mongodb_host %s '
+                     '-op insert -num_indices 1 -records_per_index 50000' %
+                     (VSBENCH, fabfile.env['head']),
+                     shell=True)
+        start_time = time.time()
+        check_output('%s -driver mongodb -mongodb_host %s -op search '
+                     '-query "%s"' %
+                     (VSBENCH, fabfile.env['head'],
+                      "/foo/bar?index0>10000&index0<20000"),
+                     shell=True)
+        end_time = time.time()
+        args.output.write('%d %0.2f\n' % (shard, end_time - start_time))
+        args.output.flush()
+        destory_cluster()
+    args.output.close()
+
+
+def test_open_search(args):
+    """Test search latency in open loop.
     """
     def mpirun(args):
         """
@@ -117,7 +150,7 @@ def test_search(args):
         print(yellow('Building 100 indices, each 100,000 records..'),
               file=sys.stderr)
         check_output('srun -n 10 %s -driver mongodb -mongodb_host %s -op insert'
-                     ' -num_indices 10 -records_per_index 100000' % \
+                     ' -num_indices 2 -records_per_index 50000' % \
                      (VSBENCH, fabfile.env['head']),
                      shell=True)
         start_time = time.time()
@@ -160,6 +193,10 @@ def main():
     parser_search = subparsers.add_parser(
         'search', help='test searching performance')
     parser_search.set_defaults(func=test_search)
+
+    parser_open_search = subparsers.add_parser(
+        'open_search', help='test searching performance')
+    parser_open_search.set_defaults(func=test_open_search)
 
     args = parser.parse_args()
     args.func(args)

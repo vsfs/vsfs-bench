@@ -28,7 +28,7 @@ import pymongo
 import shutil
 import sys
 import time
-sys.path.append('../..')
+sys.path.append('..')
 from fablib import base_dir, download_tarball, run_background
 
 SCRIPT_DIR = os.path.dirname(__file__)
