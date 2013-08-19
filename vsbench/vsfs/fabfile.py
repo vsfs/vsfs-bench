@@ -74,6 +74,7 @@ def load_config():
 
 load_config()
 
+
 @parallel(pool_size=10)
 def prepare_directories():
     """Make dir for Master, Index Server, Meta Server.
@@ -233,7 +234,8 @@ def test_data_migration():
 
 
 def config_filebench(workload, num_files, num_threads, test_dir):
-    print(workload, test_dir, num_files, num_threads, MEAN_FILE_SIZE, IO_SIZE, RUN_TIME)
+    print(workload, test_dir, num_files, num_threads, MEAN_FILE_SIZE, IO_SIZE,
+          RUN_TIME)
     filebench_conf = """load %s
 set $dir=%s
 set $nfiles=%d
@@ -256,23 +258,23 @@ def run_filebench():
     return throughput
 
 
-def mount_vsfs():
+def mount_vsfs(base_dir, mount_dir):
     """Mount VSFS on lustre.
     """
-    vsfs_path = os.path.join(FUSE_DIR, 'mount.vsfs')
-    if not os.path.exists(BASE_DIR):
-        os.makedirs(BASE_DIR)
-    if not os.path.exists(MNT_POINT):
-        os.makedirs(MNT_POINT)
-    print(_yellow("Trying to mount VSFS. "))
+    vsfs_bin = os.path.join(FUSE_DIR, 'mount.vsfs')
+    if not os.path.exists(base_dir):
+        os.makedirs(base_dir)
+    if not os.path.exists(mount_dir):
+        os.makedirs(mount_dir)
+    print(yellow("Trying to mount VSFS to %s." % mount_dir))
     run('%s -o nonempty -b %s -H %s %s' %
-        (vsfs_path, BASE_DIR, env.head, MNT_POINT))
+        (vsfs_bin, base_dir, env.head, mount_dir))
 
 
-def umount_vsfs():
+def umount_vsfs(mount_dir):
     """Un-mount VSFS.
     """
-    run('fusermount -u %s', MNT_POINT)
+    run('fusermount -u %s', mount_dir)
 
 
 @task
@@ -287,7 +289,7 @@ def test_filebench_with_vsfs(**kwargs):
     num_files = int(kwargs.get('num_files', '100000'))
     num_threads = int(kwargs.get('num_threads', '16'))
     test_dir = kwargs.get('test_dir', MNT_POINT)
-    mount_vsfs()
+    mount_vsfs(BASE_DIR, MNT_POINT)
     with open('test_filebench_with_vsfs', 'w') as result_file:
         result_file.write('Workload #Threads Throughput iteration\n')
     for workload in FILEBENCH_WORKLOADS:
@@ -298,6 +300,7 @@ def test_filebench_with_vsfs(**kwargs):
             with open('test_filebench_with_vsfs', 'a') as result_file:
                 result_file.write("%s  %s  %s  %s\n"
                                   % (workload, num_threads, throughput, i))
+    umount_vsfs(MNT_POINT)
 
 
 @task

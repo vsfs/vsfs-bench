@@ -16,15 +16,39 @@
 
 
 from fabric.api import task, local, lcd, execute
+import datetime
 import os
+import shutil
 import sys
 sys.path.append('../..')
 from vsbench.hbase import fabfile as hbase
 
 SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
 VSFS_DIR = os.path.abspath(SCRIPT_DIR + "/../../vsbench/vsfs")
+INPUT_DIR = os.path.join(SCRIPT_DIR, 'testdata/input')
 
-__all__ = ['start', 'stop']
+__all__ = ['start', 'stop', 'gen_input']
+
+
+@task
+def gen_input():
+    """Generate input dataset statistically.
+    """
+    if os.path.exists(INPUT_DIR):
+        shutil.rmtree(INPUT_DIR)
+    os.makedirs(INPUT_DIR)
+
+    logname_format = 'log_%d.%d.%d.%d.txt'  # log_YEAR.MONTH.DAY.HOUR.txt
+
+    date = datetime.date(2013, 1, 1)
+    delta = datetime.timedelta(1)  # one day
+    while date.year == 2013:
+        date += delta
+        for hr in range(24):
+            logfile = logname_format % (date.year, date.month, date.day, hr)
+            print(logfile)
+            with open(os.path.join(INPUT_DIR, logfile), 'w') as fobj:
+                pass
 
 
 @task
