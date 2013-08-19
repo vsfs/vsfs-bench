@@ -104,11 +104,12 @@ def write_hadoop_config(filename, configs):
         fobj.write(dom.toprettyxml())
 
 
-def set_hdfs_cluster(num_datanodes):
+def set_hdfs_cluster(num_datanodes, **kwargs):
     """Sets up the configurations for a HDFS cluster with num_datanodes
     DataNodes.
     """
 
+    hbase = kwargs.get('hbase', True)
     hadoop_conf_dir = os.path.join(env.hadoop_dir, 'conf')
     hbase_conf_dir = os.path.join(env.hbase_dir, 'conf')
 
@@ -127,6 +128,9 @@ def set_hdfs_cluster(num_datanodes):
 
     write_hadoop_config(os.path.join(hadoop_conf_dir, 'core-site.xml'),
                         [('fs.default.name', 'hdfs://%(head)s/' % env)])
+
+    if not hbase:
+        return
 
     write_hadoop_config(os.path.join(hbase_conf_dir, 'hbase-site.xml'),
                         [('hbase.rootdir', 'hdfs://%(head)s/' % env),
@@ -169,33 +173,42 @@ def start(nodes, **kwargs):
     """start(node): Starts a HBase cluster.
 
     @param nodes the number of nodes.
+    @param hbase=True Also run hbase, default is true.
     """
     num_datanodes = int(nodes)
+
+    hbase = kwargs.get('hbase', True)
     ret = execute(download_tarball, HADOOP_URL)
     if ret['<local-only>']:
         with open(os.path.join(env.hadoop_conf, 'hadoop-env.sh'), 'a') as fobj:
             fobj.write('export JAVA_HOME=%s\n' % os.environ['JAVA_HOME'])
-    ret = execute(download_tarball, HBASE_URL)
-    if ret['<local-only>']:
-        with open(os.path.join(env.hbase_conf, 'hbase-env.sh'), 'a') as fobj:
-            fobj.write('export JAVA_HOME=%s\n' % os.environ['JAVA_HOME'])
 
-    set_hdfs_cluster(num_datanodes)
+    if hbase:
+        ret = execute(download_tarball, HBASE_URL)
+        if ret['<local-only>']:
+            with open(os.path.join(env.hbase_conf,
+                                   'hbase-env.sh'), 'a') as fobj:
+                fobj.write('export JAVA_HOME=%s\n' % os.environ['JAVA_HOME'])
+
+    set_hdfs_cluster(num_datanodes, **kwargs)
     execute(prepare_directory, hosts=[env.head])
     execute(prepare_directory, hosts=env.workers[:num_datanodes])
     run('yes Y | %(hadoop_bin)s/hadoop namenode -format' % env)
     run('%(hadoop_bin)s/start-dfs.sh' % env)
-    run('%(hbase_bin)s/start-hbase.sh' % env)
-    run('%(hbase_bin)s/hbase-daemon.sh start thrift' % env)
+    if hbase:
+        run('%(hbase_bin)s/start-hbase.sh' % env)
+        run('%(hbase_bin)s/hbase-daemon.sh start thrift' % env)
 
 
 @task
 @roles('head')
-def stop():
+def stop(**kwargs):
     """Stop a HBase cluster.
     """
-    run("%(hbase_bin)s/hbase-daemon.sh stop thrift" % env)
-    run("%(hbase_bin)s/stop-hbase.sh" % env)
+    hbase = kwargs.get('hbase', True)
+    if hbase:
+        run("%(hbase_bin)s/hbase-daemon.sh stop thrift" % env)
+        run("%(hbase_bin)s/stop-hbase.sh" % env)
     run('%(hadoop_bin)s/stop-dfs.sh' % env)
 
 
