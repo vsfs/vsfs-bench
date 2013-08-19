@@ -9,7 +9,7 @@
 
 from fabric.api import run, roles, task, env, execute, parallel, local
 from fabric.api import settings, cd, hide, sudo
-from fabric.colors import green as _green, yellow as _yellow
+from fabric.colors import green, yellow, red
 from multiprocessing import Queue
 import boto
 import boto.ec2
@@ -372,7 +372,7 @@ EC2_SECURITY_GROUPS = ['quick-start-1']
 def ec2_create_instance():
     """Creates an EC2 instance for VSFS
     """
-    print(_yellow('Creating EC2 instance'))
+    print(yellow('Creating EC2 instance'))
     conn = boto.ec2.connect_to_region(EC2_REGION)
     conn.run_instances(EC2_AMI,
                        instance_type='m1.small',
@@ -380,6 +380,9 @@ def ec2_create_instance():
                        key_name='eddy')
 
     reservation = conn.get_all_instances()
+    if not reservation:
+        print(red('No instance is running.'))
+        return
     instance = reservation[0].instances[0]
     instance.add_tag("Name", "VSFS AMI")
 
@@ -397,11 +400,12 @@ def ec2_install_packages():
                 'libboost1.53-dev', 'libboost-filesystem1.53-dev',
                 'libboost-system1.53-dev', 'libgflags-dev',
                 'libgoogle-glog-dev', 'git-core']
-    print(_yellow('Installing dependancies..'))
+    print(yellow('Installing dependancies...'))
     with settings(user='ubuntu', key_filename='~/eddy.pem'):
         sudo('apt-get -qq update')
         sudo('apt-get -y -qq dist-upgrade')
         sudo('apt-get -y -qq install %s' % ' '.join(packages))
+
 
 @task
 def ec2_deploy():
@@ -409,11 +413,14 @@ def ec2_deploy():
     """
     conn = boto.ec2.connect_to_region(EC2_REGION)
     reservation = conn.get_all_instances()
+    if not reservation:
+        print(red('No instance is running.'))
+        return
+
     instance = reservation[0].instances[0]
-    instance.update()
 
     while instance.state == u'pending':
-        print(_yellow("Instance state: %s" % instance.state))
+        print(yellow("Instance state: %s" % instance.state))
         time.sleep(10)
         instance.update()
 
