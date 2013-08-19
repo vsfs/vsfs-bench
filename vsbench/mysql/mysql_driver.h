@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MYSQL_MYSQL_DRIVER_H_
-#define MYSQL_MYSQL_DRIVER_H_
+#ifndef VSBENCH_MYSQL_MYSQL_DRIVER_H_
+#define VSBENCH_MYSQL_MYSQL_DRIVER_H_
 
 #include <mysql++/mysql++.h>
 #include <list>
@@ -101,4 +101,4 @@ class PartitionedMySQLDriver : public MySQLDriver {
 }  // namespace vsbench
 }  // namespace vsfs
 
-#endif  // MYSQL_MYSQL_DRIVER_H_
+#endif  // VSBENCH_MYSQL_MYSQL_DRIVER_H_

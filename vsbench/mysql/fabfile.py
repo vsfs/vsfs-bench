@@ -15,7 +15,7 @@ import os
 import shutil
 import socket
 import sys
-sys.path.append('..')
+sys.path.append('../..')
 from fablib import base_dir, download_tarball
 import time
 
@@ -34,7 +34,7 @@ def load_config():
     env.data_dir = os.path.abspath('mysql_data')
     env.config_dir = os.path.abspath('mysql_config')
 
-    with open('../nodes.txt') as fobj:
+    with open('../../nodes.txt') as fobj:
         node_list = [line.strip() for line in fobj]
     env.head = node_list[0]
     env.workers = node_list[1:]
@@ -209,7 +209,7 @@ def _show_processes():
 
 
 @task
-def status():
+def ps():
     """Query the status of the test cluster.
     """
     node_list = list(env.workers)

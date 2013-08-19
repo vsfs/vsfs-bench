@@ -26,7 +26,7 @@ using mongo::BSONObj;
 using std::vector;
 
 DEFINE_string(mongodb_host, "localhost", "Sets the mongodb host to connect");
-DEFINE_int32(mongodb_port, 27017, "Sets the mongodb port to connect");
+DEFINE_int32(mongodb_port, 27018, "Sets the mongodb port to connect");
 
 const char* kTestCollection = "vsfs.test";
 
@@ -39,7 +39,6 @@ Status MongoDBDriver::init() {
     return status;
   }
   clear();
-  db_conn_.ensureIndex(kTestCollection, BSON("file" << 1));
   return Status::OK;
 }
 
@@ -58,7 +57,7 @@ Status MongoDBDriver::connect() {
 Status MongoDBDriver::create_index(const string &path, const string &name,
                                    int index_type, int key_type) {
   auto p = BSON(name << 1);
-  db_conn_.ensureIndex(kTestCollection, p);
+  string collection = kTestCollection;
   return Status::OK;
 }
 

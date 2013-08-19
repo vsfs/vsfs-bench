@@ -33,3 +33,9 @@ Makefile.in
 hbase/hbase-*
 hbase/hadoop-*
 hbase/hbase
+
+*.tar.*
+*.err
+*.out
+.libs
+.dirstamp

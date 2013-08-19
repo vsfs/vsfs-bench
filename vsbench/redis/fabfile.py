@@ -21,8 +21,8 @@ from __future__ import print_function, division
 from fabric.api import task, env, execute, roles, run, local, settings, lcd
 from fabric.api import parallel
 import sys
-sys.path.append('..')
-from fablib import base_dir, download_tarball, run_background
+sys.path.append('../..')
+from vsbench.fablib import base_dir, download_tarball, run_background
 
 
 URL = 'http://redis.googlecode.com/files/redis-2.6.14.tar.gz'
@@ -32,3 +32,10 @@ def download():
     download_tarball(URL)
     with lcd(base_dir(URL)):
         local('make')
+
+
+@task
+def ps():
+    """Report the running status of all servers.
+    """
+    pass

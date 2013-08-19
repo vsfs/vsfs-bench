@@ -1,5 +1,10 @@
 # Makefile.am for HBase-based test.
 
+AM_CXXFLAGS = \
+	      -I${top_srcdir}/lib/vsfs/lib/vobla \
+	      -I${top_srcdir}/lib/vsfs \
+	      $(libthrift_CFLAGS)
+
 BUILT_SOURCES = hbase/Hbase.h
 
 HBASE_DIR=$(shell fab --hide=running,status hbase_dir)

@@ -5,8 +5,8 @@ from __future__ import print_function, division
 from fabric.api import task, env, local
 import os
 import sys
-sys.path.append('..')
-from fablib import base_dir, download_tarball
+sys.path.append('../..')
+from vsbench.fablib import base_dir, download_tarball
 
 VERSION = '3.4'
 URL = 'http://voltdb.com/downloads/technologies/server/' + \
@@ -38,9 +38,19 @@ def build():
 
 @task
 def start():
+    """Starts a VoltDB cluster.
+    """
     pass
 
 
 @task
 def stop():
+    """Stops the VoltDB cluster.
+    """
+    pass
+
+@task
+def ps():
+    """Shows the runtime status of voltdb cluster.
+    """
     pass

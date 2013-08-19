@@ -28,16 +28,17 @@ import pymongo
 import shutil
 import sys
 import time
-sys.path.append('../..')
+sys.path.append('..')
 from fablib import base_dir, download_tarball, run_background
 
 SCRIPT_DIR = os.path.dirname(__file__)
+NODES_FILE = os.path.join(SCRIPT_DIR, '..', '..', 'nodes.txt')
 MONGO_VERSION = '2.5.1'
 URL = 'http://fastdl.mongodb.org/linux/' \
       'mongodb-linux-x86_64-%s.tgz' % MONGO_VERSION
 CXX_DRIVER_URL = 'http://downloads.mongodb.org/cxx-driver/' \
                  'mongodb-linux-x86_64-%s.tgz' % MONGO_VERSION
-VSBENCH = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir, 'bin/vsbench'))
+VSBENCH = os.path.abspath(os.path.join(SCRIPT_DIR, '../../bin/vsbench'))
 MONGOS_PORT = 27018
 
 
@@ -50,7 +51,7 @@ def load_config():
     env.data_dir = os.path.abspath('testdata/data')
     env.mongo_bin = os.path.join(env.bin_dir, 'mongod')
 
-    with open('../../nodes.txt') as fobj:
+    with open(NODES_FILE) as fobj:
         node_list = [line.strip() for line in fobj]
     env.head = node_list[0]
     env.workers = node_list[1:]
@@ -110,6 +111,7 @@ def start(num_shard):
 
     @param num_shard the number of shard servers.
     """
+    print(yellow('Starting MongoDB instance..'))
     num_shard = int(num_shard)
     download_tarball(URL)
 
@@ -138,7 +140,14 @@ def start(num_shard):
                     raise
                 time.sleep(2)
 
+    db = conn.vsfs
+    collection = db['test']
+    collection.create_index([("file", pymongo.ASCENDING)])
+    collection.ensure_index("file")
+    for i in range(0, 61):
+        collection.create_index([("index" + str(i), pymongo.ASCENDING)])
     admin.command('enableSharding', 'vsfs')
+    admin.command('shardCollection', 'vsfs.test', key={'file': 'hashed'})
 
 
 @roles('head')
@@ -159,7 +168,7 @@ def _show_processes():
 
 
 @task
-def status():
+def ps():
     """Query the running status of the test cluster.
     """
     node_list = list(env.workers)
