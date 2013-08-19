@@ -41,17 +41,31 @@ def destory_cluster(driver):
         local('fab stop')
 
 
-def mpirun(cmd, mpi=False, debug=False):
+def parallel_run(params, mpi=False, debug=False):
+    """Parallelly running clients
+    """
     if mpi:
         run_cmd = 'mpirun --mca orte_base_help_aggregate 0 '
     else:
         run_cmd = 'srun '
-    run_cmd += cmd
+    run_cmd += ' %s -driver %s -%s_host %s ' % \
+               (VSBENCH, args.driver, args.driver, fabfile.env['head'])
+    run_cmd += params
     if mpi:
-        cmd += ' -mpi'
+        run_cmd += ' -mpi'
     if debug:
-        print(cmd, file=sys.stderr)
+        print(run_cmd, file=sys.stderr)
     check_output(run_cmd, shell=True)
+
+
+def create_indices(args, num_indices):
+    print(yellow('Intializing DB and creating indices...'), file=sys.stderr)
+    driver = args.driver
+    cmd = '%s -driver %s -%s_host %s -op create_indices -num_indices %d' % \
+          (VSBENCH, driver, driver, fabfile.env['head'], num_indices)
+    if driver == 'mysql':
+        cmd += ' -mysql_schema single'
+    check_output(cmd, shell=True)
 
 
 def test_index(args):
@@ -59,22 +73,16 @@ def test_index(args):
     """
     num_indices = 63  # Max indices supported in mongodb
 
-    def mpirun(args):
+    def run_test(args):
         """
         """
-        if args.mpi:
-            cmd = 'mpirun --mca orte_base_help_aggregate 0 '
-        else:
-            cmd = 'srun '
-        cmd += '%s -driver %s -%s_host %s -op insert ' \
-               '-num_indices 2 -records_per_index %d' % \
-               (VSBENCH, args.driver, args.driver, fabfile.env['head'],
-                args.total / num_indices)
-        if args.mpi:
-            cmd += ' -mpi'
-        print(cmd)
-        check_output(cmd, shell=True)
+        params = '-op insert -num_indices 2 -records_per_index %d' % \
+                 (args.total / num_indices)
+        if args.driver == 'mysql':
+            params += ' -cal_prefix -mysql_schema single'
+        parallel_run(params, args.mpi)
 
+    driver = args.driver
     args.output.write("# Shard\tTotal\tLatency\n")
     destory_cluster(args.driver)
     time.sleep(3)
@@ -82,15 +90,18 @@ def test_index(args):
     for shard in shard_confs:
         prepare_cluster(args.driver, shard)
         time.sleep(3)
+        if driver != 'mongodb':
+            # MongoDB's indices are created when start the cluster. Calling
+            # "vsbench -op create_indices" crahses the benchmark. Need to
+            # investigate later.
+            create_indices(args, num_indices)
         print('Importing files.', file=sys.stderr)
-        check_output('srun %s -driver %s -%s_host %s '
-                     '-op import -records_per_index %d' %
-                     (VSBENCH, args.driver, args.driver, fabfile.env['head'],
-                      args.total / num_indices),
-                     shell=True)
+        params = '-op import -records_per_index %d' % \
+                 (args.total / num_indices)
+        parallel_run(params)
         print('Run insert for %d shard' % shard, file=sys.stderr)
         start_time = time.time()
-        mpirun(args)
+        run_test(args)
         end_time = time.time()
         args.output.write('%d %d %0.2f\n' %
                           (shard, args.total, end_time - start_time))
@@ -109,10 +120,7 @@ def test_search(args):
         time.sleep(3)
         print(yellow('Populating namespace...'), file=sys.stderr)
         print(yellow('Importing files...'), file=sys.stderr)
-        check_output(
-            'srun %s -driver %s -%s_host %s -op import -records_per_index %s' %
-            (VSBENCH, args.driver, args.driver, fabfile.env['head'],
-             num_files), shell=True)
+        parallel_run('-op import -records_per_index %d' % num_files)
         print(yellow('Building 2 indices, each %d records..' % num_files),
               file=sys.stderr)
         check_output('srun -n 2 %s -driver %s -%s_host %s '
@@ -121,10 +129,8 @@ def test_search(args):
                       num_files),
                      shell=True)
         start_time = time.time()
-        check_output('%s -driver %s -%s_host %s -op search -query "%s"' %
-                     (VSBENCH, args.driver, args.driver, fabfile.env['head'],
-                      "/foo/bar?index0>10000&index0<20000"),
-                     shell=True)
+        parallel_run('-op search -query "%s"' %
+                     "/foo/bar?index0>10000&index0<20000")
         end_time = time.time()
         args.output.write('%d %0.2f\n' % (shard, end_time - start_time))
         args.output.flush()
@@ -135,21 +141,10 @@ def test_search(args):
 def test_open_search(args):
     """Test search latency in open loop.
     """
-    def mpirun(args):
+    def run_test(args):
         """
         """
-        if args.mpi:
-            cmd = 'mpirun --mca orte_base_help_aggregate 0 '
-        else:
-            cmd = 'srun '
-        cmd += '%s -driver %s -%s_host %s -%s_port %d -op open_search' \
-               ' -num_indices 20' % \
-               (VSBENCH, args.driver, args.driver, fabfile.env['head'],
-                args.driver, fabfile.MONGOS_PORT)
-        if args.mpi:
-            cmd += ' -mpi'
-        print(cmd, file=sys.stderr)
-        check_output(cmd, shell=True)
+        parallel_run('-op open_search -num_indices 20', args.mpi)
 
     args.output.write("# Shard Latency\n")
     shard_confs = map(int, args.shards.split(','))
@@ -160,10 +155,7 @@ def test_open_search(args):
         time.sleep(3)
         print(yellow('Populating namespace...'), file=sys.stderr)
         print(yellow('Importing files...'), file=sys.stderr)
-        check_output('srun %s -driver mongodb -mongodb_host %s '
-                     '-mongodb_port %d -op import -records_per_index 100000' %
-                     (VSBENCH, fabfile.env['head'], fabfile.MONGOS_PORT),
-                     shell=True)
+        parallel_run('-op import -records_per_index 100000')
         print(yellow('Building 100 indices, each 100,000 records..'),
               file=sys.stderr)
         check_output('srun -n 10 %s -driver %s -%s_host %s '
@@ -171,7 +163,7 @@ def test_open_search(args):
                      (VSBENCH, args.driver, args.driver, fabfile.env['head']),
                      shell=True)
         start_time = time.time()
-        mpirun(args)
+        run_test(args)
         end_time = time.time()
         args.output.write('%d %0.2f\n' % (shard, end_time - start_time))
         args.output.flush()

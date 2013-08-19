@@ -132,7 +132,6 @@ Status create_indices() {
   }
   VLOG(1) << "Connected to db...";
 
-  LOG(ERROR) << "START TO INSERT";
   int index_type = vsfs::index::IndexInfo::BTREE;
   int key_type = UINT64;
   for (int i = 0; i < FLAGS_num_indices; ++i) {

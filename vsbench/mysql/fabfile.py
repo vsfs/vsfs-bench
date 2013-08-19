@@ -16,7 +16,7 @@ import shutil
 import socket
 import sys
 sys.path.append('../..')
-from fablib import base_dir, download_tarball
+from vsbench.fablib import base_dir, download_tarball
 import time
 
 SCRIPT_DIR = os.path.dirname(__file__)
@@ -24,6 +24,7 @@ MAX_RETRY = 10
 URL = "http://cdn.mysql.com/Downloads/MySQL-Cluster-7.3/" + \
     "mysql-cluster-gpl-7.3.2-linux-glibc2.5-x86_64.tar.gz"
 VSBENCH = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir, 'vsbench'))
+NODES_FILE = os.path.join(SCRIPT_DIR, '..', '..', 'nodes.txt')
 
 
 def load_config():
@@ -34,7 +35,7 @@ def load_config():
     env.data_dir = os.path.abspath('mysql_data')
     env.config_dir = os.path.abspath('mysql_config')
 
-    with open('../../nodes.txt') as fobj:
+    with open(NODES_FILE) as fobj:
         node_list = [line.strip() for line in fobj]
     env.head = node_list[0]
     env.workers = node_list[1:]
@@ -156,7 +157,7 @@ set global max_connections = 40000; """)
                          'mysql < %s' % (env.data_dir, init_sql_script))
             if not output.failed:
                 break
-            print("Retry mysql setup..{}".format(etry))
+            print("Retry mysql setup..{}".format(retry))
             retry -= 1
             local('sleep 5')
 
@@ -185,7 +186,7 @@ def _start_task(num_servers):
 
 @task
 def start(num_servers):
-    """Starts a MySQL cluster.
+    """Starts a MySQL cluster. (param: num_servers)
     """
     _start_task(num_servers)
 

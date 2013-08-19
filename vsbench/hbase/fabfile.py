@@ -16,8 +16,8 @@ import sys
 import time
 import yaml
 sys.path.append('../..')
-from fablib import base_dir, download_tarball, create_indices
-import fablib
+from vsbench.fablib import base_dir, download_tarball, create_indices
+from vsbench import fablib
 
 SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
 VERSION = '0.94.10'
