@@ -22,11 +22,11 @@ import pwd
 
 
 SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
-NODE_FILE = os.path.join(os.path.dirname(__file__), os.pardir, 'nodes.txt')
-MASTERD = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir, 'lib/vsfs/vsfs',
-                                       'masterd', 'masterd'))
-INDEXD = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir, 'lib/vsfs/vsfs',
-                                      'indexd', 'indexd'))
+NODE_FILE = os.path.join(SCRIPT_DIR, '../../nodes.txt')
+MASTERD = os.path.abspath(
+    os.path.join(SCRIPT_DIR, '../../lib/vsfs/vsfs/masterd/masterd'))
+INDEXD = os.path.abspath(
+    os.path.join(SCRIPT_DIR, '../../lib/vsfs/vsfs/indexd/indexd'))
 LOG_DIR = os.path.join(SCRIPT_DIR, 'log')
 VSFSUTIL = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir, os.pardir,
                                         'client', 'vsfs'))
@@ -59,7 +59,8 @@ def load_config():
         with open(NODE_FILE) as fobj:
             node_list = [line.strip() for line in fobj]
     except IOError:
-        raise UserWarning("Nodes.txt file does not exist.")
+        raise UserWarning("a 'nodes.txt' file must be placed on vsfs-bench's "
+                          "root directory.")
     env.head = node_list[0]
     env.nodes = node_list
     env.workers = node_list[1:]
