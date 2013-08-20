@@ -17,7 +17,9 @@
 
 from fabric.api import task, local, lcd, execute
 import datetime
+import numpy as np
 import os
+import random
 import shutil
 import sys
 sys.path.append('../..')
@@ -33,7 +35,20 @@ __all__ = ['start', 'stop', 'gen_input']
 @task
 def gen_input():
     """Generate input dataset statistically.
+    @param zipf
+    @param error error possiblity
+    @param days
     """
+    zipf_a = 1.5
+    error_poss = 0.05   # 5% of error possiblity
+    events_per_second = 10
+
+    COMPONENTS = ['WEB', 'SQL', 'MQ', 'NET', 'BALANCER']
+    zipf_dist = {}
+    for comp in COMPONENTS:
+        zipf_dist[comp] = np.random.zipf(zipf_a, 365 * 24)
+        random.shuffle(zipf_dist[comp])
+
     if os.path.exists(INPUT_DIR):
         shutil.rmtree(INPUT_DIR)
     os.makedirs(INPUT_DIR)
@@ -42,13 +57,35 @@ def gen_input():
 
     date = datetime.date(2013, 1, 1)
     delta = datetime.timedelta(1)  # one day
+    hours = 0
     while date.year == 2013:
         date += delta
         for hr in range(24):
             logfile = logname_format % (date.year, date.month, date.day, hr)
-            print(logfile)
+            comps_possibilities = \
+                map(float, [zipf_dist[c][hours] for c in COMPONENTS])
+            error_poss_array = np.cumsum(comps_possibilities)
+            error_poss_array /= float(error_poss_array[-1])
+            hours += 1
             with open(os.path.join(INPUT_DIR, logfile), 'w') as fobj:
-                pass
+                for i in range(3600 * events_per_second):
+                    poss = random.random()
+                    if poss <= error_poss:
+                        poss /= error_poss
+                        idx = 0
+                        comp = None
+                        while True:
+                            if poss <= error_poss_array[idx]:
+                                comp = COMPONENTS[idx]
+                                break
+                            idx += 1
+
+                        error_line = \
+                            '[ERROR][%s] Has an error to figure out...\n' % \
+                            comp
+                        fobj.write(error_line)
+                    else:
+                        fobj.write('[OK] Another successful event.\n')
 
 
 @task
