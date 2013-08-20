@@ -32,7 +32,6 @@ VSFS_DIR = os.path.abspath(SCRIPT_DIR + "/../../vsbench/vsfs")
 HBASE_DIR = os.path.abspath(SCRIPT_DIR + "/../../vsbench/hbase")
 INPUT_DIR = os.path.join(SCRIPT_DIR, 'testdata/input')
 VSFS_UTIL = os.path.join(SCRIPT_DIR, '../../lib/vsfs/vsfs/client/vsfs')
-VSFS_MOUNT = os.path.join(SCRIPT_DIR, '../../lib/vsfs/vsfs/fuse/mount.vsfs')
 MOUNT_DIR = os.path.join(SCRIPT_DIR, 'testdata/mnt')
 BASE_DIR = os.path.join(SCRIPT_DIR, 'testdata/base')
 
@@ -71,8 +70,7 @@ def gen_input(**kwargs):
     date = datetime.date(2013, 1, 1)
     delta = datetime.timedelta(1)  # one day
     hours = 0
-    while date.year == 2013:
-        date += delta
+    while date.year == 2013 and date.month == 1:
         for hr in range(24):
             logfile = logname_format % (date.year, date.month, date.day, hr)
             comps_possibilities = \
@@ -100,6 +98,7 @@ def gen_input(**kwargs):
                         fobj.write(error_line)
                     else:
                         fobj.write('[OK] Another successful event.\n')
+        date += delta
 
 
 @task
@@ -111,21 +110,26 @@ def start():
     with lcd(HBASE_DIR):
         local('fab start:16')
 
+    local('sleep 2')
+    run('rm -rf %s' % BASE_DIR)
+    run('rm -rf %s' % MOUNT_DIR)
+    execute(fablib.mount_vsfs, BASE_DIR, MOUNT_DIR, vsfs.env['head'],
+            host=vsfs.env['head'])
+
 
 @task
 def stop():
     """Stops the VSFS cluster and the hadoop cluster.
     """
+    execute(fablib.umount_vsfs, MOUNT_DIR, host=vsfs.env['head'])
     with lcd(VSFS_DIR):
         local('fab stop')
     with lcd(HBASE_DIR):
         local('fab stop')
 
 
+
 def import_namespace():
-    run('rm -rf %s' % BASE_DIR)
-    run('rm -rf %s' % MOUNT_DIR)
-    fablib.mount_vsfs(BASE_DIR, MOUNT_DIR, vsfs.env['head'])
     run('%s/mrlog.py --verbose import %s %s' % \
         (SCRIPT_DIR, INPUT_DIR, MOUNT_DIR))
     run('%s/hadoop fs -copyFromLocal %s hdfs://%s/' %

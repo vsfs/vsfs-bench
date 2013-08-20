@@ -46,7 +46,7 @@ def load_config():
     env.hadoop_bin = os.path.join(env.hadoop_dir, 'bin')
     env.hadoop_sbin = os.path.join(env.hadoop_dir, 'sbin')
     env.hadoop_conf = os.path.join(env.hadoop_dir, 'conf')
-    env.hbase_dir = base_dir(HBASE_URL)
+    env.hbase_dir = os.path.join(SCRIPT_DIR, base_dir(HBASE_URL))
     env.hbase_bin = os.path.join(env.hbase_dir, 'bin')
     env.hbase_conf = os.path.join(env.hbase_dir, 'conf')
 

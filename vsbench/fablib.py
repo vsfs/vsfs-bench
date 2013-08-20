@@ -25,7 +25,7 @@ def base_dir(url):
         url = url[:-7]
     elif url.endswith('.tgz'):
         url = url[:-4]
-    return os.path.abspath(os.path.basename(url))
+    return os.path.basename(url)
 
 
 def result_filename(prefix, **kwargs):
