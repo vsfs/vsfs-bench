@@ -15,7 +15,7 @@
 # limitations under the License.
 
 
-from fabric.api import task, local, lcd, execute
+from fabric.api import task, local, lcd, execute, run
 import datetime
 import numpy as np
 import os
@@ -24,11 +24,17 @@ import shutil
 import sys
 sys.path.append('../..')
 from vsbench.hbase import fabfile as hbase
+from vsbench.vsfs import fabfile as vsfs
+from vsbench import fablib
 
 SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
 VSFS_DIR = os.path.abspath(SCRIPT_DIR + "/../../vsbench/vsfs")
+HBASE_DIR = os.path.abspath(SCRIPT_DIR + "/../../vsbench/hbase")
 INPUT_DIR = os.path.join(SCRIPT_DIR, 'testdata/input')
 VSFS_UTIL = os.path.join(SCRIPT_DIR, '../../lib/vsfs/vsfs/client/vsfs')
+VSFS_MOUNT = os.path.join(SCRIPT_DIR, '../../lib/vsfs/vsfs/fuse/mount.vsfs')
+MOUNT_DIR = os.path.join(SCRIPT_DIR, 'testdata/mnt')
+BASE_DIR = os.path.join(SCRIPT_DIR, 'testdata/base')
 
 __all__ = ['start', 'stop', 'gen_input', 'index_inputs']
 
@@ -102,7 +108,8 @@ def start():
     """
     with lcd(VSFS_DIR):
         local('fab start:4')
-    execute(hbase.start, 16, hbase=False)
+    with lcd(HBASE_DIR):
+        local('fab start:16')
 
 
 @task
@@ -111,7 +118,18 @@ def stop():
     """
     with lcd(VSFS_DIR):
         local('fab stop')
-    execute(hbase.stop, hbase=False)
+    with lcd(HBASE_DIR):
+        local('fab stop')
+
+
+def import_namespace():
+    run('rm -rf %s' % BASE_DIR)
+    run('rm -rf %s' % MOUNT_DIR)
+    fablib.mount_vsfs(BASE_DIR, MOUNT_DIR, vsfs.env['head'])
+    run('%s/mrlog.py --verbose import %s %s' % \
+        (SCRIPT_DIR, INPUT_DIR, MOUNT_DIR))
+    run('%s/hadoop fs -copyFromLocal %s hdfs://%s/' %
+        (hbase.env['hadoop_bin'], INPUT_DIR, hbase.env['head']))
 
 
 @task
@@ -120,4 +138,4 @@ def index_inputs():
 
     Before running index_inputs(), the cluster must be first started.
     """
-    pass
+    execute(import_namespace, host=vsfs.env['head'])

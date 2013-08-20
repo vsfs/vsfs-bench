@@ -6,12 +6,15 @@
 """
 
 from fabric.api import local, run, settings, env, parallel, execute, hide
+from fabric.colors import yellow, red
 import os
 import time
 from datetime import datetime
 
 SCRIPT_DIR = os.path.dirname(__file__)
 VSBENCH = os.path.abspath(os.path.join(SCRIPT_DIR, 'vsbench'))
+VSFS_MOUNT = os.path.abspath(
+    os.path.join(SCRIPT_DIR, '../lib/vsfs/vsfs/fuse/mount.vsfs'))
 
 
 def base_dir(url):
@@ -128,3 +131,25 @@ def search(driver, root, name, num_records, percent=0.1):
     end_time = time.time()
     ret = "%0.2f" % (end_time - start_time)
     return ret
+
+
+def mount_vsfs(base_dir, mount_dir, host, options=None):
+    """Use FUSE to mount VSFS
+    @param base_dir the base directory to store the FUSE.
+    @param mount_dir the mount point of vsfs-fuse.
+    @param host the hostname of the primary master node.
+    @param options the mount options
+    """
+    if not os.path.exists(base_dir):
+        os.makedirs(base_dir)
+    if not os.path.exists(mount_dir):
+        os.makedirs(mount_dir)
+    print(yellow("Trying to mount VSFS to %s." % mount_dir))
+    run('%s -o nonempty -b %s -H %s %s' %
+        (VSFS_MOUNT, base_dir, host, mount_dir))
+
+
+def umount_vsfs(mount_dir):
+    """Un-mount VSFS.
+    """
+    run('fusermount -u %s' % mount_dir)

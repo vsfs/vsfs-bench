@@ -258,25 +258,6 @@ def run_filebench():
     return throughput
 
 
-def mount_vsfs(base_dir, mount_dir):
-    """Mount VSFS on lustre.
-    """
-    vsfs_bin = os.path.join(FUSE_DIR, 'mount.vsfs')
-    if not os.path.exists(base_dir):
-        os.makedirs(base_dir)
-    if not os.path.exists(mount_dir):
-        os.makedirs(mount_dir)
-    print(yellow("Trying to mount VSFS to %s." % mount_dir))
-    run('%s -o nonempty -b %s -H %s %s' %
-        (vsfs_bin, base_dir, env.head, mount_dir))
-
-
-def umount_vsfs(mount_dir):
-    """Un-mount VSFS.
-    """
-    run('fusermount -u %s', mount_dir)
-
-
 @task
 @roles('head')
 def test_filebench_with_vsfs(**kwargs):
@@ -289,7 +270,7 @@ def test_filebench_with_vsfs(**kwargs):
     num_files = int(kwargs.get('num_files', '100000'))
     num_threads = int(kwargs.get('num_threads', '16'))
     test_dir = kwargs.get('test_dir', MNT_POINT)
-    mount_vsfs(BASE_DIR, MNT_POINT)
+    fablib.mount_vsfs(BASE_DIR, MNT_POINT)
     with open('test_filebench_with_vsfs', 'w') as result_file:
         result_file.write('Workload #Threads Throughput iteration\n')
     for workload in FILEBENCH_WORKLOADS:
@@ -300,7 +281,7 @@ def test_filebench_with_vsfs(**kwargs):
             with open('test_filebench_with_vsfs', 'a') as result_file:
                 result_file.write("%s  %s  %s  %s\n"
                                   % (workload, num_threads, throughput, i))
-    umount_vsfs(MNT_POINT)
+    fablib.umount_vsfs(MNT_POINT)
 
 
 @task
