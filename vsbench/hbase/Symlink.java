@@ -8,9 +8,14 @@ class Symlink {
 	public static void main(String args[]) throws Exception {
 		FileContext ctx = FileContext.getFileContext();
 
-		for (String arg : args) {
-			System.out.println(arg);
+		if (args.length < 2) {
+			System.out.println("Symlink <src> <src> ... <tgt>");
 		}
-		ctx.createSymlink(new Path(args[0]), new Path(args[1]), false);
+
+		String tgt = args[args.length - 1];
+		for (int i = 0; i < args.length - 1; i++) {
+			String src = args[i];
+			ctx.createSymlink(new Path(src), new Path(tgt), false);
+		}
 	}
 }

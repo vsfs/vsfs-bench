@@ -5,11 +5,11 @@ AM_CXXFLAGS = \
 	      -I${top_srcdir}/lib/vsfs \
 	      $(libthrift_CFLAGS)
 
-BUILT_SOURCES = hbase/Hbase.h
+BUILT_SOURCES = hbase/Hbase.h Symlink.class
 
 HBASE_DIR=$(shell fab --hide=running,status hbase_dir)
 
-build_thrift: download  hbase/Hbase.h
+build_thrift: download  hbase/Hbase.h Symlink.class
 
 Symlink.class: Symlink.java
 	javac -cp `hadoop-2.0.5-alpha/bin/hadoop classpath` Symlink.java
