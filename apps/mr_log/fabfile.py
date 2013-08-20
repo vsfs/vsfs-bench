@@ -28,22 +28,29 @@ from vsbench.hbase import fabfile as hbase
 SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
 VSFS_DIR = os.path.abspath(SCRIPT_DIR + "/../../vsbench/vsfs")
 INPUT_DIR = os.path.join(SCRIPT_DIR, 'testdata/input')
+VSFS_UTIL = os.path.join(SCRIPT_DIR, '../../lib/vsfs/vsfs/client/vsfs')
 
-__all__ = ['start', 'stop', 'gen_input']
+__all__ = ['start', 'stop', 'gen_input', 'index_inputs']
 
 
 @task
-def gen_input():
+def gen_input(**kwargs):
     """Generate input dataset statistically.
-    @param zipf
-    @param error error possiblity
+
+    Optional parameters:
+    @param zipf The alpha value for zipf distribution.
+    @param error error possibility
+    @param events_per_second How many events recorded for one second.
     @param days
     """
-    zipf_a = 1.5
-    error_poss = 0.05   # 5% of error possiblity
-    events_per_second = 10
+    zipf_a = float(kwargs.get('zipf', 1.5))
+    # Error possibility
+    error_poss = float(kwargs.get('errors', 0.05))   # 5% of error possiblity
+#    days = int(kwargs.get('days', 365))
+    events_per_second = int(kwargs.get('events_per_second', 10))
 
-    COMPONENTS = ['WEB', 'SQL', 'MQ', 'NET', 'BALANCER']
+    # Assume we have 5 individual components which fail indipendently.
+    COMPONENTS = ['WEB', 'MYSQL', 'QUEUE', 'NETWORK', 'BALANCER']
     zipf_dist = {}
     for comp in COMPONENTS:
         zipf_dist[comp] = np.random.zipf(zipf_a, 365 * 24)
@@ -53,7 +60,7 @@ def gen_input():
         shutil.rmtree(INPUT_DIR)
     os.makedirs(INPUT_DIR)
 
-    logname_format = 'log_%d.%d.%d.%d.txt'  # log_YEAR.MONTH.DAY.HOUR.txt
+    logname_format = 'log_%d.%02d.%02d.%02d.txt'  # log_YEAR.MONTH.DAY.HOUR.txt
 
     date = datetime.date(2013, 1, 1)
     delta = datetime.timedelta(1)  # one day
@@ -67,6 +74,7 @@ def gen_input():
             error_poss_array = np.cumsum(comps_possibilities)
             error_poss_array /= float(error_poss_array[-1])
             hours += 1
+            # Generates log for one hour.
             with open(os.path.join(INPUT_DIR, logfile), 'w') as fobj:
                 for i in range(3600 * events_per_second):
                     poss = random.random()
@@ -104,3 +112,12 @@ def stop():
     with lcd(VSFS_DIR):
         local('fab stop')
     execute(hbase.stop, hbase=False)
+
+
+@task
+def index_inputs():
+    """Parse all inputs and index them into vsfs's indices.
+
+    Before running index_inputs(), the cluster must be first started.
+    """
+    pass

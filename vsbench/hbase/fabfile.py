@@ -21,8 +21,10 @@ from vsbench import fablib
 
 SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
 VERSION = '0.94.10'
-HADOOP_URL = 'http://www.trieuvan.com/apache/hadoop/common/stable/' + \
-             'hadoop-1.2.1.tar.gz'
+#HADOOP_URL = 'http://www.trieuvan.com/apache/hadoop/common/stable/' + \
+#             'hadoop-1.2.1.tar.gz'
+HADOOP_URL = 'http://apache.petsads.us/hadoop/common/hadoop-2.0.5-alpha/' \
+             'hadoop-2.0.5-alpha.tar.gz'
 
 HBASE_URL = ("http://mirror.reverse.net/pub/apache/hbase/hbase-%s/" +
              "hbase-%s.tar.gz") % (VERSION, VERSION)
@@ -42,6 +44,7 @@ def load_config():
 
     env.hadoop_dir = base_dir(HADOOP_URL)
     env.hadoop_bin = os.path.join(env.hadoop_dir, 'bin')
+    env.hadoop_sbin = os.path.join(env.hadoop_dir, 'sbin')
     env.hadoop_conf = os.path.join(env.hadoop_dir, 'conf')
     env.hbase_dir = base_dir(HBASE_URL)
     env.hbase_bin = os.path.join(env.hbase_dir, 'bin')
@@ -113,6 +116,9 @@ def set_hdfs_cluster(num_datanodes, **kwargs):
     hadoop_conf_dir = os.path.join(env.hadoop_dir, 'conf')
     hbase_conf_dir = os.path.join(env.hbase_dir, 'conf')
 
+    if not os.path.exists(hadoop_conf_dir):
+        os.makedirs(hadoop_conf_dir)
+
     # MasterNode address
     with open(os.path.join(hadoop_conf_dir, 'master'), 'w') as fobj:
         fobj.write('%s\n' % env.head)
@@ -123,11 +129,11 @@ def set_hdfs_cluster(num_datanodes, **kwargs):
             fobj.write('%s\n' % node)
 
     write_hadoop_config(os.path.join(hadoop_conf_dir, 'hdfs-site.xml'),
-                        [('dfs.name.dir', NAME_DIR),
-                        ('dfs.data.dir', DATA_DIR)])
+                        [('dfs.namenode.name.dir', NAME_DIR),
+                         ('dfs.datanode.data.dir', DATA_DIR)])
 
     write_hadoop_config(os.path.join(hadoop_conf_dir, 'core-site.xml'),
-                        [('fs.default.name', 'hdfs://%(head)s/' % env)])
+                        [('fs.defaultFS', 'hdfs://%(head)s/' % env)])
 
     if not hbase:
         return
@@ -193,8 +199,12 @@ def start(nodes, **kwargs):
     set_hdfs_cluster(num_datanodes, **kwargs)
     execute(prepare_directory, hosts=[env.head])
     execute(prepare_directory, hosts=env.workers[:num_datanodes])
-    run('yes Y | %(hadoop_bin)s/hadoop namenode -format' % env)
-    run('%(hadoop_bin)s/start-dfs.sh' % env)
+    run('yes Y | HADOOP_CONF_DIR=%(hadoop_conf)s '
+        '%(hadoop_bin)s/hdfs namenode -format vsfs' % env)
+    run('%(hadoop_sbin)s/hadoop-daemon.sh --config %(hadoop_conf)s '
+        '--script hdfs start namenode' % env)
+    run('%(hadoop_sbin)s/hadoop-daemon.sh --config %(hadoop_conf)s '
+        '--script hdfs start datanode' % env)
     if hbase:
         run('%(hbase_bin)s/start-hbase.sh' % env)
         run('%(hbase_bin)s/hbase-daemon.sh start thrift' % env)
@@ -209,7 +219,10 @@ def stop(**kwargs):
     if hbase:
         run("%(hbase_bin)s/hbase-daemon.sh stop thrift" % env)
         run("%(hbase_bin)s/stop-hbase.sh" % env)
-    run('%(hadoop_bin)s/stop-dfs.sh' % env)
+    run('%(hadoop_sbin)s/hadoop-daemon.sh --config %(hadoop_conf)s '
+        '--script hdfs stop namenode' % env)
+    run('%(hadoop_sbin)s/hadoop-daemon.sh --config %(hadoop_conf)s '
+        '--script hdfs stop datanode' % env)
 
 
 @task
