@@ -173,6 +173,16 @@ def download():
     execute(download_tarball, HBASE_URL)
 
 
+@parallel
+def start_datanode():
+    run('%(hadoop_sbin)s/hadoop-daemon.sh --config %(hadoop_conf)s '
+        '--script hdfs start datanode' % env)
+
+@parallel
+def start_nodemanager():
+    run('%(hadoop_sbin)s/yarn-daemon.sh --config %(hadoop_conf)s '
+        'start nodemanager' % env)
+
 @task
 @roles('head')
 def start(nodes, **kwargs):
@@ -183,7 +193,10 @@ def start(nodes, **kwargs):
     """
     num_datanodes = int(nodes)
 
-    hbase = kwargs.get('hbase', True)
+    hbase = False
+    if 'hbase' in kwargs:
+        hbase = True
+
     ret = execute(download_tarball, HADOOP_URL)
     if ret['<local-only>']:
         with open(os.path.join(env.hadoop_conf, 'hadoop-env.sh'), 'a') as fobj:
@@ -203,12 +216,25 @@ def start(nodes, **kwargs):
         '%(hadoop_bin)s/hdfs namenode -format vsfs' % env)
     run('%(hadoop_sbin)s/hadoop-daemon.sh --config %(hadoop_conf)s '
         '--script hdfs start namenode' % env)
-    run('%(hadoop_sbin)s/hadoop-daemon.sh --config %(hadoop_conf)s '
-        '--script hdfs start datanode' % env)
+    execute(start_datanode, hosts=env.workers[:num_datanodes])
+    run('%(hadoop_sbin)s/yarn-daemon.sh --config %(hadoop_conf)s '
+        'start resourcemanager' % env)
+    execute(start_nodemanager, hosts=env.workers[:num_datanodes])
+
     if hbase:
         run('%(hbase_bin)s/start-hbase.sh' % env)
         run('%(hbase_bin)s/hbase-daemon.sh start thrift' % env)
 
+
+@parallel
+def stop_datanode():
+    run('%(hadoop_sbin)s/hadoop-daemon.sh --config %(hadoop_conf)s '
+        '--script hdfs stop datanode' % env)
+
+@parallel
+def stop_nodemanager():
+    run('%(hadoop_sbin)s/yarn-daemon.sh --config %(hadoop_conf)s '
+        'stop nodemanager' % env)
 
 @task
 @roles('head')
@@ -221,8 +247,10 @@ def stop(**kwargs):
         run("%(hbase_bin)s/stop-hbase.sh" % env)
     run('%(hadoop_sbin)s/hadoop-daemon.sh --config %(hadoop_conf)s '
         '--script hdfs stop namenode' % env)
-    run('%(hadoop_sbin)s/hadoop-daemon.sh --config %(hadoop_conf)s '
-        '--script hdfs stop datanode' % env)
+    execute(stop_datanode, hosts=env.workers)
+    run('%(hadoop_sbin)s/yarn-daemon.sh --config %(hadoop_conf)s '
+        'stop resourcemanager' % env)
+    execute(stop_nodemanager, hosts=env.workers)
 
 
 @task
