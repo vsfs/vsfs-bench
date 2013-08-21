@@ -1,12 +1,23 @@
 #!/usr/bin/env python
 #
-# Fabric configurations for VSFS
-#
 # Copyright 2013 (c) Ziling Huang <hzlgis@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """Vsfs fabfile
 """
 
+from __future__ import print_function
 from fabric.api import run, roles, task, env, execute, parallel, local
 from fabric.api import settings, cd, hide, sudo
 from fabric.colors import green, yellow, red
@@ -230,7 +241,7 @@ def test_scale(**kwargs):
 
 @task
 def test_data_migration():
-    print "Starting vsfs data migration test..."
+    print("Starting vsfs data migration test...")
 
 
 def config_filebench(workload, num_files, num_threads, test_dir):
@@ -275,7 +286,7 @@ def test_filebench_with_vsfs(**kwargs):
         result_file.write('Workload #Threads Throughput iteration\n')
     for workload in FILEBENCH_WORKLOADS:
         config_filebench(workload, num_files, num_threads, test_dir)
-        print "Running Filebench workload: %s with VSFS." % workload
+        print("Running Filebench workload: %s with VSFS." % workload)
         for i in range(ITERATIONS):
             throughput = run_filebench()
             with open('test_filebench_with_vsfs', 'a') as result_file:
@@ -301,7 +312,7 @@ def test_filebench_without_vsfs(**kwargs):
         result_file.write('Workload #Threads Throughput iteration\n')
     for workload in FILEBENCH_WORKLOADS:
         config_filebench(workload, num_files, num_threads, test_dir)
-        print "Running Filebench workload: %s without VSFS." % workload
+        print("Running Filebench workload: %s without VSFS." % workload)
         for i in range(ITERATIONS):
             throughput = run_filebench()
             with open('test_filebench_without_vsfs', 'a') as result_file:
@@ -341,7 +352,7 @@ def stress_index_server():
     records = 100000
     execute(fablib.create_indices, 'vsfs', indices, host=env.head)
     insert_latency = insert_records(indices, env.workers, records)
-    print insert_latency
+    print(insert_latency)
     run('%s info -H %s /foo/bar' % (VSFSUTIL, env.head))
 
     execute(stop)

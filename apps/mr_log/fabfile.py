@@ -15,7 +15,8 @@
 # limitations under the License.
 
 
-from fabric.api import task, local, lcd, execute, run
+from __future__ import print_function
+from fabric.api import task, local, lcd, execute, run, roles, settings
 import datetime
 import numpy as np
 import os
@@ -102,6 +103,7 @@ def gen_input(**kwargs):
 
 
 @task
+@roles('head')
 def start():
     """Starts a VSFS cluster and Hadoop cluster.
     """
@@ -118,10 +120,12 @@ def start():
 
 
 @task
+@roles('head')
 def stop():
     """Stops the VSFS cluster and the hadoop cluster.
     """
-    execute(fablib.umount_vsfs, MOUNT_DIR, host=vsfs.env['head'])
+    with settings(warn_only=True):
+        execute(fablib.umount_vsfs, MOUNT_DIR, host=vsfs.env['head'])
     with lcd(VSFS_DIR):
         local('fab stop')
     with lcd(HBASE_DIR):
