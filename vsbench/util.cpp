@@ -19,7 +19,6 @@
  * \brief  Implementation of various utility for vsbench.
  */
 
-#include <boost/lexical_cast.hpp>
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 #include <cstdlib>
@@ -29,7 +28,8 @@
 
 DEFINE_uint64(batch_size, 1024, "Sets the batch size.");
 
-using boost::lexical_cast;
+using std::string;
+using std::to_string;
 
 namespace vsfs {
 namespace vsbench {
@@ -50,15 +50,15 @@ Status Util::create_index(Driver* driver, const string &index_path,
   return status;
 }
 
-Status Util::insert_files(Driver* driver, const string &root_path,
-                          const string &index_name, int start,
+Status Util::insert_files(Driver* driver, const string& root_path,
+                          const string& index_name, int start,
                           int num_files) {
   CHECK_NOTNULL(driver);
   Status status;
   Driver::RecordVector records;
   string prefix = root_path + "/file-";
   for (int i = start; i < start + num_files; ++i) {
-    string filename = prefix + lexical_cast<string>(i);
+    string filename = prefix + to_string(i);
     // uint64_t key = rand_r(&seed) % (num_files * 10);
     uint64_t key = static_cast<uint64_t>(i);
     records.emplace_back(filename, index_name, key);
@@ -81,8 +81,8 @@ Status Util::insert_files(Driver* driver, const string &root_path,
   return Status::OK;
 }
 
-Status Util::insert_files(Driver* driver, const string &root_path,
-                          const string &index_name, int num_files) {
+Status Util::insert_files(Driver* driver, const string& root_path,
+                          const string& index_name, int num_files) {
   return insert_files(driver, root_path, index_name, 0, num_files);
 }
 

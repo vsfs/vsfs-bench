@@ -1,12 +1,29 @@
+#!/usr/bin/env python
+#
+# Copyright 2013 (c) Lei Xu <eddyxu@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Install and start/stop VoltDB
 """
 
 from __future__ import print_function, division
 from fabric.api import task, env, local
+from xml.dom import minidom
 import os
 import sys
 sys.path.append('../..')
-from vsbench.fablib import base_dir, download_tarball
+from vsbench import fablib
 
 VERSION = '3.4'
 URL = 'http://voltdb.com/downloads/technologies/server/' + \
@@ -25,9 +42,9 @@ load_config()
 def download():
     """Downloads the VoltDB binaray and extract.
     """
-    download_tarball(URL, output='voltdb-%s.tar.gz' % VERSION)
-    download_tarball(API_URL)
-    api_dir = base_dir(API_URL)
+    fablib.download_tarball(URL, output='voltdb-%s.tar.gz' % VERSION)
+    fablib.download_tarball(API_URL)
+    api_dir = fablib.base_dir(API_URL)
     local('rm -rf %s/include/boost' % api_dir)
 
 @task
@@ -36,12 +53,33 @@ def build():
     """
     local('%s compile -o vsfs.jar vsfs.sql' % env.voltdb)
 
+def create_deployment_file(num_servers):
+    """Creates deployment file for VoltDB.
+    http://voltdb.com/docs/UsingVoltDB/ChapAppRun.php#RunClusterConfig
+    """
+    dom = minidom.parseString('<deployment/>')
+    root = dom.firstChild
+    cluster_node = minidom.Element('cluster')
+    cluster_node.setAttribute('hostcount', str(num_servers))
+    cluster_node.setAttribute('sitesperhost', str(1))
+    cluster_node.setAttribute('kfactor', str(0))
+    root.appendChild(cluster_node)
+
+    paths_node = minidom.Element('paths')
+    voltdbroot = minidom.Element('voltdbroot')
+    voltdbroot.setAttribute('path', '/tmp')  # TODO(eddyxu) change to local
+    paths_node.appendChild(voltdbroot)
+    root.appendChild(paths_node)
+
+    with open('deployment.xml', 'w') as fobj:
+        fobj.write(dom.toprettyxml())
+
+
 @task
 def start():
     """Starts a VoltDB cluster.
     """
-    pass
-
+    create_deployment_file(1)
 
 @task
 def stop():
@@ -53,4 +91,4 @@ def stop():
 def ps():
     """Shows the runtime status of voltdb cluster.
     """
-    pass
+    fablib.ps('voltdb')

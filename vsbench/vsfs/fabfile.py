@@ -24,6 +24,7 @@ from fabric.colors import green, yellow, red
 from multiprocessing import Queue
 import boto
 import boto.ec2
+import fabric
 import os
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -66,22 +67,7 @@ FILEBENCH_CONF_FILE = os.path.abspath(os.path.join(SCRIPT_DIR,
 def load_config():
     """Init configurations.
     """
-    try:
-        with open(NODE_FILE) as fobj:
-            node_list = [line.strip() for line in fobj]
-    except IOError:
-        raise UserWarning("a 'nodes.txt' file must be placed on vsfs-bench's "
-                          "root directory.")
-    env.head = node_list[0]
-    env.nodes = node_list
-    env.workers = node_list[1:]
-
-    env.roledefs = {}
-    env.roledefs['head'] = [env.head]
-    env.roledefs['worker'] = [env.workers]
-
-    if not os.path.exists(LOG_DIR):
-        os.makedirs(LOG_DIR)
+    fablib.load_nodes()
 
 load_config()
 
@@ -150,6 +136,9 @@ def start(nodes, **kwargs):
     master_nodes = env.nodes[:num_clusters]
     execute(prepare_directories, hosts=env.nodes)
 
+    if not os.path.exists(LOG_DIR):
+        os.makedirs(LOG_DIR)
+
     for master in master_nodes:
         execute(start_master, host=master)
     run('sleep 5')
@@ -172,6 +161,19 @@ def stop():
             hide('warnings', 'running', 'stdout', 'stderr')):
         execute(stop_index_server, hosts=env.workers)
         execute(stop_master, hosts=env.nodes)
+
+
+def _show_processes():
+    """ Show mysql process on remote machine.
+    """
+    run('ps aux | grep -E "indexd|masterd" | grep -v grep || true')
+
+
+@task
+def ps():
+    """Prints the status of the running cluster processes.
+    """
+    fablib.ps('indexd|masterd')
 
 
 def insert_records(num_indices, client_nodes, records):

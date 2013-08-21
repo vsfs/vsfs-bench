@@ -1,12 +1,24 @@
 #!/usr/bin/env python
 #
-# Author: Lei Xu <eddyxu@gmail.com>
+# Copyright 2013 (c) Lei Xu <eddyxu@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """Useful functions for fabfile
 """
 
 from fabric.api import local, run, settings, env, parallel, execute, hide
-from fabric.colors import yellow, red
+from fabric.colors import yellow
 import os
 import time
 from datetime import datetime
@@ -63,6 +75,21 @@ def run_background(cmd):
     run('nohup %s >& /dev/null < /dev/null &' % cmd, shell=True, pty=False)
 
 
+def ps(regex, node_list=None):
+    """Prints out the processes of the cluster.
+    @param regex the regular express to grep out from ps(2)
+    @node_list Optional. Provides a list of servers to query.
+    """
+    def _show_processes():
+        run('ps aux | grep -E "%s" | grep -v grep || true' % regex)
+
+    if not node_list:
+        node_list = list(env.workers)
+        node_list.append(env.head)
+    with settings(hide('warnings', 'running', 'stderr', 'status')):
+        execute(_show_processes, hosts=node_list)
+
+
 def create_dir(path, mode=755):
     """Creates a new directory. If the directory already exists, then it
     deletes the directory first.
@@ -71,6 +98,25 @@ def create_dir(path, mode=755):
         run('rm -rf %s' % path)
         run('mkdir -p %s' % path)
         run('chmod %d %s' % (mode, path))
+
+
+def load_nodes():
+    """Load nodes from /path/to/vsfs-bench/nodes.txt
+    """
+    nodes_file = os.path.join(os.path.dirname(__file__), '..', 'nodes.txt')
+    try:
+        with open(nodes_file) as fobj:
+            node_list = [line.strip() for line in fobj]
+    except IOError:
+        raise UserWarning("a 'nodes.txt' file must be placed on vsfs-bench's "
+                          "root directory.")
+    env.head = node_list[0]
+    env.nodes = node_list
+    env.workers = node_list[1:]
+
+    env.roledefs = {}
+    env.roledefs['head'] = [env.head]
+    env.roledefs['worker'] = [env.workers]
 
 
 def create_indices(driver, num_indices, **kwargs):

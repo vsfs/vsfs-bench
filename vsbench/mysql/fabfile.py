@@ -1,22 +1,33 @@
 #!/usr/bin/env python
 #
-# Fabfile to start/stop MySQL Cluster.
+# Copyright 2013 (c) Lei Xu <eddyxu@gmail.com>
 #
-# Author: Lei Xu <eddyxu@gmail.com>
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """Install and run MySQL Cluster.
 """
+
 from __future__ import print_function
 from fabric.api import local, run, roles, env, execute, task, cd, settings
 from fabric.api import parallel
 from multiprocessing import Queue
-import fabric
 import os
 import shutil
 import socket
 import sys
 sys.path.append('../..')
 from vsbench.fablib import base_dir, download_tarball
+from vsbench import fablib
 import time
 
 SCRIPT_DIR = os.path.dirname(__file__)
@@ -203,21 +214,11 @@ def stop():
         run('screen -wipe')
 
 
-def _show_processes():
-    """ Show mysql process on remote machine.
-    """
-    run('ps aux | grep mysql | grep -v grep || true')
-
-
 @task
 def ps():
     """Query the status of the test cluster.
     """
-    node_list = list(env.workers)
-    node_list.append(env.head)
-    fabric.state.output['running'] = False
-    fabric.state.output['stderr'] = False
-    execute(_show_processes, hosts=node_list)
+    fablib.ps('mysql')
 
 
 @roles('head')

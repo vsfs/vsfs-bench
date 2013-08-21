@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef VOLTDB_VOLTDB_DRIVER_H_
-#define VOLTDB_VOLTDB_DRIVER_H_
+#ifndef VSBENCH_VOLTDB_VOLTDB_DRIVER_H_
+#define VSBENCH_VOLTDB_VOLTDB_DRIVER_H_
 
 #include <memory>
 #include <string>
@@ -63,4 +63,4 @@ class VoltDBDriver : public Driver {
 }  // namespace vsbench
 }  // namespace vsfs
 
-#endif  // VOLTDB_VOLTDB_DRIVER_H_
+#endif  // VSBENCH_VOLTDB_VOLTDB_DRIVER_H_
