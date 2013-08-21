@@ -18,25 +18,29 @@
 """
 
 from __future__ import print_function, division
-from fabric.api import task, env, local
+from fabric.api import task, env, execute, local, roles, run
 from xml.dom import minidom
 import os
 import sys
 sys.path.append('../..')
 from vsbench import fablib
 
+SCRIPT_DIR = os.path.dirname(__file__)
 VERSION = '3.4'
 URL = 'http://voltdb.com/downloads/technologies/server/' + \
       'LINUX-voltdb-%s.tar.gz' % VERSION
 API_URL = 'http://voltdb.com/downloads/technologies/client/' + \
           'voltdb-client-cpp-linux-x86_64-3.0.tar.gz'
 
+
 def load_config():
-    env.voltdb_dir = 'voltdb-%s' % VERSION
+    fablib.load_nodes()
+    env.voltdb_dir = os.path.join(SCRIPT_DIR, 'voltdb-%s' % VERSION)
     env.bin_dir = os.path.join(env.voltdb_dir, 'bin')
     env.voltdb = os.path.join(env.bin_dir, 'voltdb')
 
 load_config()
+
 
 @task
 def download():
@@ -47,11 +51,13 @@ def download():
     api_dir = fablib.base_dir(API_URL)
     local('rm -rf %s/include/boost' % api_dir)
 
+
 @task
 def build():
     """Builds the jar for the VoltDB.
     """
     local('%s compile -o vsfs.jar vsfs.sql' % env.voltdb)
+
 
 def create_deployment_file(num_servers):
     """Creates deployment file for VoltDB.
@@ -75,17 +81,33 @@ def create_deployment_file(num_servers):
         fobj.write(dom.toprettyxml())
 
 
+def start_others():
+    fablib.run_background('%(voltdb)s create host %(head)s ' % env +
+                          'catalog %s/vsfs.jar ' % SCRIPT_DIR +
+                          'deployment %s/deployment.xml' % SCRIPT_DIR)
+
+@roles('head')
 @task
-def start():
+def start(num_servers):
     """Starts a VoltDB cluster.
     """
-    create_deployment_file(1)
+    num_servers = int(num_servers)
+    create_deployment_file(num_servers)
 
+    fablib.run_background('%(voltdb)s create host %(head)s ' % env +
+                          'catalog %s/vsfs.jar ' % SCRIPT_DIR +
+                          'deployment %s/deployment.xml' % SCRIPT_DIR)
+    local('sleep 2')
+    execute(start_others, hosts=env.workers[:num_servers-1])
+
+
+@roles('head')
 @task
 def stop():
     """Stops the VoltDB cluster.
     """
-    pass
+    run('%(bin_dir)s/voltadmin shutdown --host=%(head)s ' % env)
+
 
 @task
 def ps():

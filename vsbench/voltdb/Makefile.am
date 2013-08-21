@@ -1,7 +1,7 @@
-# Makefile.am for HBase-based test.
+# Makefile.am for VoltDB test.
 
 noinst_LIBRARIES = libvsbench-voltdb.a
-BUILT_SOURCES = download
+BUILT_SOURCES = download vsfs.jar
 
 AM_CPPFLAGS = \
   -I${top_srcdir}/lib/vsfs \
@@ -19,5 +19,9 @@ libvsbench_voltdb_a_LIBADD = \
 
 download:
 	fab download
+
+vsfs.jar: vsfs.sql
+	voltdb-3.*/bin/voltdb compile -o vsfs.jar vsfs.sql
+
 
 .PHONY: download
