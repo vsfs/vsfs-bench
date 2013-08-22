@@ -1,10 +1,20 @@
 #!/usr/bin/env python
 #
-# Fabric configurations for HBase
+# Copyright 2013 (c) Lei Xu <eddyxu@gmail.com>
 #
-# Author: Lei Xu <eddyxu@gmail.com>
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-"""start/stop HBase on Demand
+"""start/stop Hadoop/HBase/Hive on Demand
 """
 
 from fabric.api import parallel
@@ -28,6 +38,8 @@ HADOOP_URL = 'http://apache.petsads.us/hadoop/common/hadoop-2.0.5-alpha/' \
 
 HBASE_URL = ("http://mirror.reverse.net/pub/apache/hbase/hbase-%s/" +
              "hbase-%s.tar.gz") % (VERSION, VERSION)
+HIVE_URL = 'http://mirror.cc.columbia.edu/pub/software/apache/hive/' \
+           'hive-0.11.0/hive-0.11.0-bin.tar.gz'
 NODE_FILE = os.path.abspath(os.path.join(SCRIPT_DIR, '..', '..', 'nodes.txt'))
 VSBENCH = os.path.abspath('../vsbench')
 RETRY = 10
@@ -107,14 +119,11 @@ def write_hadoop_config(filename, configs):
         fobj.write(dom.toprettyxml())
 
 
-def set_hdfs_cluster(num_datanodes, **kwargs):
+def set_hdfs_cluster(num_datanodes):
     """Sets up the configurations for a HDFS cluster with num_datanodes
     DataNodes.
     """
-
-    hbase = kwargs.get('hbase', True)
     hadoop_conf_dir = os.path.join(env.hadoop_dir, 'conf')
-    hbase_conf_dir = os.path.join(env.hbase_dir, 'conf')
 
     if not os.path.exists(hadoop_conf_dir):
         os.makedirs(hadoop_conf_dir)
@@ -135,8 +144,11 @@ def set_hdfs_cluster(num_datanodes, **kwargs):
     write_hadoop_config(os.path.join(hadoop_conf_dir, 'core-site.xml'),
                         [('fs.defaultFS', 'hdfs://%(head)s/' % env)])
 
-    if not hbase:
-        return
+
+def set_hbase_cluster(num_datanodes):
+    """Sets the configurations for hbase cluster.
+    """
+    hbase_conf_dir = os.path.join(env.hbase_dir, 'conf')
 
     write_hadoop_config(os.path.join(hbase_conf_dir, 'hbase-site.xml'),
                         [('hbase.rootdir', 'hdfs://%(head)s/' % env),
@@ -183,33 +195,22 @@ def start_nodemanager():
     run('%(hadoop_sbin)s/yarn-daemon.sh --config %(hadoop_conf)s '
         'start nodemanager' % env)
 
+
 @task
 @roles('head')
-def start(nodes, **kwargs):
-    """start(node): Starts a HBase cluster.
+def start(nodes):
+    """start(node): Starts a hadoop (MapReduce) cluster.
 
     @param nodes the number of nodes.
-    @param hbase=True Also run hbase, default is true.
     """
     num_datanodes = int(nodes)
-
-    hbase = False
-    if 'hbase' in kwargs:
-        hbase = True
 
     ret = execute(download_tarball, HADOOP_URL)
     if ret['<local-only>']:
         with open(os.path.join(env.hadoop_conf, 'hadoop-env.sh'), 'a') as fobj:
             fobj.write('export JAVA_HOME=%s\n' % os.environ['JAVA_HOME'])
 
-    if hbase:
-        ret = execute(download_tarball, HBASE_URL)
-        if ret['<local-only>']:
-            with open(os.path.join(env.hbase_conf,
-                                   'hbase-env.sh'), 'a') as fobj:
-                fobj.write('export JAVA_HOME=%s\n' % os.environ['JAVA_HOME'])
-
-    set_hdfs_cluster(num_datanodes, **kwargs)
+    set_hdfs_cluster(num_datanodes)
     execute(prepare_directory, hosts=[env.head])
     execute(prepare_directory, hosts=env.workers[:num_datanodes])
     run('yes Y | HADOOP_CONF_DIR=%(hadoop_conf)s '
@@ -221,9 +222,37 @@ def start(nodes, **kwargs):
         'start resourcemanager' % env)
     execute(start_nodemanager, hosts=env.workers[:num_datanodes])
 
-    if hbase:
-        run('%(hbase_bin)s/start-hbase.sh' % env)
-        run('%(hbase_bin)s/hbase-daemon.sh start thrift' % env)
+
+@task
+@roles('head')
+def start_hbase(nodes):
+    """Starts a Hadoop + HBase cluster (param: nodes)
+    """
+    num_nodes = int(nodes)
+    ret = execute(download_tarball, HBASE_URL)
+    if ret['<local-only>']:
+        with open(os.path.join(env.hbase_conf,
+                               'hbase-env.sh'), 'a') as fobj:
+            fobj.write('export JAVA_HOME=%s\n' % os.environ['JAVA_HOME'])
+
+    execute(start, num_nodes)
+    set_hbase_cluster(num_nodes)
+    run('%(hbase_bin)s/start-hbase.sh' % env)
+    run('%(hbase_bin)s/hbase-daemon.sh start thrift' % env)
+
+@task
+@roles('head')
+def start_hive(nodes):
+    """Starts a Hive + Hadoop cluster.
+    """
+    num_nodes = int(nodes)
+    execute(download_tarball, HIVE_URL)
+    execute(start, num_nodes)
+    run('%(hadoop_bin)s/hadoop fs -mkdir -p hdfs://%(head)s/tmp' % env)
+    run('%(hadoop_bin)s/hadoop fs '
+        '-mkdir -p hdfs://%(head)s/user/hive/warehouse' % env)
+    run('%(hadoop_bin)s/hadoop fs -chmod g+w hdfs://%(head)s/tmp' % env)
+    run('%(hadoop_bin)s/hadoop fs -chmod g+w hdfs://%(head)s/user/hive/warehouse' % env)
 
 
 @parallel
@@ -231,20 +260,18 @@ def stop_datanode():
     run('%(hadoop_sbin)s/hadoop-daemon.sh --config %(hadoop_conf)s '
         '--script hdfs stop datanode' % env)
 
+
 @parallel
 def stop_nodemanager():
     run('%(hadoop_sbin)s/yarn-daemon.sh --config %(hadoop_conf)s '
         'stop nodemanager' % env)
 
+
 @task
 @roles('head')
 def stop(**kwargs):
-    """Stop a HBase cluster.
+    """Stop a hadoop cluster.
     """
-    hbase = kwargs.get('hbase', True)
-    if hbase:
-        run("%(hbase_bin)s/hbase-daemon.sh stop thrift" % env)
-        run("%(hbase_bin)s/stop-hbase.sh" % env)
     run('%(hadoop_sbin)s/hadoop-daemon.sh --config %(hadoop_conf)s '
         '--script hdfs stop namenode' % env)
     execute(stop_datanode, hosts=env.workers)
@@ -252,6 +279,21 @@ def stop(**kwargs):
         'stop resourcemanager' % env)
     execute(stop_nodemanager, hosts=env.workers)
 
+
+@task
+@roles('head')
+def stop_hbase():
+    """Stops the hadoop + hbase cluster.
+    """
+    run("%(hbase_bin)s/hbase-daemon.sh stop thrift" % env)
+    run("%(hbase_bin)s/stop-hbase.sh" % env)
+    execute(stop)
+
+
+@task
+@roles('head')
+def stop_hive():
+    execute(stop)
 
 @task
 def hbase_dir():
