@@ -28,8 +28,8 @@
 #include "vobla/traits.h"
 #include "vsfs/common/complex_query.h"
 #include "vsfs/common/path_util.h"
-#include "vsbench/hbase/hbase/Hbase.h"
-#include "vsbench/hbase/hbase_driver.h"
+#include "vsbench/hadoop/hbase/Hbase.h"
+#include "vsbench/hadoop/hbase_driver.h"
 
 using apache::hadoop::hbase::thrift::BatchMutation;
 using apache::hadoop::hbase::thrift::ColumnDescriptor;

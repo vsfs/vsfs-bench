@@ -46,7 +46,7 @@ AC_FUNC_ERROR_AT_LINE
 
 AC_CONFIG_FILES([Makefile
 				 apps/mvd/Makefile
-				 vsbench/hbase/Makefile
+				 vsbench/hadoop/Makefile
 				 vsbench/mongodb/Makefile
 				 vsbench/voltdb/Makefile
 				 ])

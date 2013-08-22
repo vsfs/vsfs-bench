@@ -21,7 +21,7 @@
 #include "vobla/traits.h"
 #include "vsfs/index/index_info.h"
 #include "vsfs/common/complex_query.h"
-#include "vsbench/hbase/hbase_driver.h"
+#include "vsbench/hadoop/hbase_driver.h"
 #include "vsbench/util.h"
 
 using std::string;

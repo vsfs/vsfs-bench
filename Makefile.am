@@ -33,7 +33,7 @@ LDADD = \
   ${libthrift_LIBS} -lmpi_cxx
 
 SUBDIRS = \
-  vsbench/hbase \
+  vsbench/hadoop \
   vsbench/mongodb \
   vsbench/voltdb
 
@@ -41,14 +41,14 @@ noinst_LIBRARIES = libvsfs-vsbench.a
 libvsfs_vsbench_a_SOURCES = \
   vsbench/driver.cpp \
   vsbench/driver.h \
-  vsbench/hbase/hbase/Hbase.cpp \
-  vsbench/hbase/hbase/Hbase.h \
-  vsbench/hbase/hbase/Hbase_constants.cpp \
-  vsbench/hbase/hbase/Hbase_constants.h \
-  vsbench/hbase/hbase/Hbase_types.cpp \
-  vsbench/hbase/hbase/Hbase_types.h \
-  vsbench/hbase/hbase_driver.cpp \
-  vsbench/hbase/hbase_driver.h \
+  vsbench/hadoop/hbase/Hbase.cpp \
+  vsbench/hadoop/hbase/Hbase.h \
+  vsbench/hadoop/hbase/Hbase_constants.cpp \
+  vsbench/hadoop/hbase/Hbase_constants.h \
+  vsbench/hadoop/hbase/Hbase_types.cpp \
+  vsbench/hadoop/hbase/Hbase_types.h \
+  vsbench/hadoop/hbase_driver.cpp \
+  vsbench/hadoop/hbase_driver.h \
   vsbench/mysql/mysql_driver.cpp \
   vsbench/mysql/mysql_driver.h \
   vsbench/util.cpp \
@@ -58,7 +58,7 @@ libvsfs_vsbench_a_SOURCES = \
 
 noinst_PROGRAMS = \
   bin/vsbench \
-  vsbench/hbase/hbase_testtool
+  vsbench/hadoop/hbase_testtool
 
 bin_vsbench_SOURCES = vsbench/vsbench.cpp
-vsbench_hbase_hbase_testtool_SOURCES = vsbench/hbase/hbase_testtool.cpp
+vsbench_hadoop_hbase_testtool_SOURCES = vsbench/hadoop/hbase_testtool.cpp

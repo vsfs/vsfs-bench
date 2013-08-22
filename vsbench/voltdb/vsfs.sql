@@ -6,6 +6,7 @@ CREATE TABLE index_meta (
 	key_type SMALLINT NOT NULL,
 );
 
+
 /* File Mapping */
 CREATE TABLE file_meta (
 	file_id BIGINT UNIQUE,

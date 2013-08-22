@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef HBASE_HBASE_DRIVER_H_
-#define HBASE_HBASE_DRIVER_H_
+#ifndef VSBENCH_HADOOP_HBASE_DRIVER_H_
+#define VSBENCH_HADOOP_HBASE_DRIVER_H_
 
 #include <memory>
 #include <string>
@@ -24,7 +24,7 @@
 #include "vsfs/rpc/rpc_client.h"
 #include "vsfs/rpc/vsfs_types.h"
 #include "vsbench/driver.h"
-#include "vsbench/hbase/hbase/Hbase.h"
+#include "vsbench/hadoop/hbase/Hbase.h"
 
 using std::string;
 using std::unique_ptr;
@@ -96,4 +96,4 @@ class HbaseDriver : public Driver {
 }  // namespace vsbench
 }  // namespace vsfs
 
-#endif  // HBASE_HBASE_DRIVER_H_
+#endif  // VSBENCH_HADOOP_HBASE_DRIVER_H_

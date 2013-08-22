@@ -18,11 +18,11 @@
 #include <glog/logging.h>
 #include <algorithm>
 #include <string>
-#include "hbase/hbase_driver.h"
-#include "voltdb/voltdb_driver.h"
 #include "vsbench/driver.h"
+#include "vsbench/hadoop/hbase_driver.h"
 #include "vsbench/mongodb/mongodb_driver.h"
 #include "vsbench/mysql/mysql_driver.h"
+#include "vsbench/voltdb/voltdb_driver.h"
 #include "vsbench/vsfs/vsfs_driver.h"
 
 using std::string;
