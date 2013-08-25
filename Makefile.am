@@ -30,6 +30,7 @@ LDADD = \
   ${top_srcdir}/lib/vsfs/lib/vobla/vobla/libvobla.la \
   -lboost_thread -lmongoclient \
   ${MYSQLPP_LIBS} ${BOOST_FILESYSTEM_LIB} ${BOOST_SYSTEM_LIB} \
+  ${BOOST_THREAD_LIB} \
   ${libthrift_LIBS} -lmpi_cxx
 
 SUBDIRS = \

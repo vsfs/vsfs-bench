@@ -20,6 +20,7 @@ AC_PROG_CPP
 AX_BOOST_BASE
 AX_BOOST_FILESYSTEM
 AX_BOOST_SYSTEM
+AX_BOOST_THREAD
 PKG_CHECK_MODULES([libthrift], [thrift])
 AC_CHECK_LIB([glog], [openlog], [], [AC_MSG_ERROR(google-glog was not found.)])
 AC_CHECK_LIB([gflags],[getenv],[],[AC_MSG_ERROR([google-gflags was not found.])])
