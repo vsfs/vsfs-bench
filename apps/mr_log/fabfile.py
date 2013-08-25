@@ -24,19 +24,29 @@ import random
 import shutil
 import sys
 sys.path.append('../..')
-from vsbench.hbase import fabfile as hbase
+from vsbench.hadoop import fabfile as hadoop
 from vsbench.vsfs import fabfile as vsfs
 from vsbench import fablib
 
 SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
 VSFS_DIR = os.path.abspath(SCRIPT_DIR + "/../../vsbench/vsfs")
-HBASE_DIR = os.path.abspath(SCRIPT_DIR + "/../../vsbench/hbase")
+HADOOP_DIR = os.path.abspath(SCRIPT_DIR + "/../../vsbench/hadoop")
 INPUT_DIR = os.path.join(SCRIPT_DIR, 'testdata/input')
 VSFS_UTIL = os.path.join(SCRIPT_DIR, '../../lib/vsfs/vsfs/client/vsfs')
 MOUNT_DIR = os.path.join(SCRIPT_DIR, 'testdata/mnt')
 BASE_DIR = os.path.join(SCRIPT_DIR, 'testdata/base')
 
-__all__ = ['start', 'stop', 'gen_input', 'index_inputs']
+TRITON_SORT_URL = 'http://www.macesystems.org/wp-uploads/2012/04/' \
+                  'tritonsort_log_with_bad_node.tar.bz2'
+
+__all__ = ['start', 'stop', 'gen_input', 'index_inputs', 'download_traces']
+
+
+@task
+def download_traces():
+    """Download traces
+    """
+    fablib.download_tarball(TRITON_SORT_URL)
 
 
 @task
@@ -109,8 +119,8 @@ def start():
     """
     with lcd(VSFS_DIR):
         local('fab start:4')
-    with lcd(HBASE_DIR):
-        local('fab start:16')
+    with lcd(HADOOP_DIR):
+        local('fab start_hive:16')
 
     local('sleep 2')
     run('rm -rf %s' % BASE_DIR)
@@ -128,16 +138,15 @@ def stop():
         execute(fablib.umount_vsfs, MOUNT_DIR, host=vsfs.env['head'])
     with lcd(VSFS_DIR):
         local('fab stop')
-    with lcd(HBASE_DIR):
+    with lcd(HADOOP_DIR):
         local('fab stop')
 
 
-
 def import_namespace():
-    run('%s/mrlog.py --verbose import %s %s' % \
+    run('%s/mrlog.py --verbose import %s %s' %
         (SCRIPT_DIR, INPUT_DIR, MOUNT_DIR))
     run('%s/hadoop fs -copyFromLocal %s hdfs://%s/' %
-        (hbase.env['hadoop_bin'], INPUT_DIR, hbase.env['head']))
+        (hadoop.env['hadoop_bin'], INPUT_DIR, hadoop.env['head']))
 
 
 @task

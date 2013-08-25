@@ -190,6 +190,7 @@ def start_datanode():
     run('%(hadoop_sbin)s/hadoop-daemon.sh --config %(hadoop_conf)s '
         '--script hdfs start datanode' % env)
 
+
 @parallel
 def start_nodemanager():
     run('%(hadoop_sbin)s/yarn-daemon.sh --config %(hadoop_conf)s '
@@ -240,6 +241,7 @@ def start_hbase(nodes):
     run('%(hbase_bin)s/start-hbase.sh' % env)
     run('%(hbase_bin)s/hbase-daemon.sh start thrift' % env)
 
+
 @task
 @roles('head')
 def start_hive(nodes):
@@ -252,7 +254,8 @@ def start_hive(nodes):
     run('%(hadoop_bin)s/hadoop fs '
         '-mkdir -p hdfs://%(head)s/user/hive/warehouse' % env)
     run('%(hadoop_bin)s/hadoop fs -chmod g+w hdfs://%(head)s/tmp' % env)
-    run('%(hadoop_bin)s/hadoop fs -chmod g+w hdfs://%(head)s/user/hive/warehouse' % env)
+    run('%(hadoop_bin)s/hadoop fs -chmod g+w '
+        'hdfs://%(head)s/user/hive/warehouse' % env)
 
 
 @parallel
@@ -293,7 +296,10 @@ def stop_hbase():
 @task
 @roles('head')
 def stop_hive():
+    """Stops a hadoop + hive cluster.
+    """
     execute(stop)
+
 
 @task
 def hbase_dir():
