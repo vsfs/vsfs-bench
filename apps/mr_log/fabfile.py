@@ -212,7 +212,7 @@ def import_hive_data(**kwargs):
         result = run("%(hadoop_bin)s/hadoop fs -test -d hdfs://%(head)s/csv" %
                      hadoop.env)
         if result.return_code == 0:
-            run("%(hadoop_bin)s/hadoop fs -rm -R hdfs://%(head)s/csv" %
+            run("%(hadoop_bin)s/hadoop fs -rmr hdfs://%(head)s/csv" %
                 hadoop.env)
     run("%s/hadoop fs -copyFromLocal %s hdfs://%s/" %
         (hadoop.env['hadoop_bin'], csv_dir, hadoop.env['head']))
@@ -235,7 +235,7 @@ CREATE INDEX idx ON TABLE log(event, value_name, value)
 AS 'org.apache.hadoop.hive.ql.index.compact.CompactIndexHandler'
 WITH DEFERRED REBUILD;
 ALTER INDEX idx ON log REBUILD;
-SHOW FORMATED INDEX ON log;
+SHOW INDEX ON log;
 """)
 
     with cd(SCRIPT_DIR):

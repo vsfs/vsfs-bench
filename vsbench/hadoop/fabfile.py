@@ -31,10 +31,10 @@ from vsbench import fablib
 
 SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
 VERSION = '0.94.10'
-#HADOOP_URL = 'http://www.trieuvan.com/apache/hadoop/common/stable/' + \
-#             'hadoop-1.2.1.tar.gz'
-HADOOP_URL = 'http://apache.petsads.us/hadoop/common/hadoop-2.0.5-alpha/' \
-             'hadoop-2.0.5-alpha.tar.gz'
+HADOOP_URL = 'http://www.trieuvan.com/apache/hadoop/common/stable/' + \
+             'hadoop-1.2.1.tar.gz'
+#HADOOP_URL = 'http://apache.petsads.us/hadoop/common/hadoop-2.0.5-alpha/' \
+#             'hadoop-2.0.5-alpha.tar.gz'
 
 HBASE_URL = ("http://mirror.reverse.net/pub/apache/hbase/hbase-%s/" +
              "hbase-%s.tar.gz") % (VERSION, VERSION)
@@ -141,11 +141,18 @@ def set_hdfs_cluster(num_datanodes):
             fobj.write('%s\n' % node)
 
     write_hadoop_config(os.path.join(hadoop_conf_dir, 'hdfs-site.xml'),
-                        [('dfs.namenode.name.dir', NAME_DIR),
-                         ('dfs.datanode.data.dir', DATA_DIR)])
+                        [('dfs.name.dir', NAME_DIR),
+                         ('dfs.data.dir', DATA_DIR)])
 
     write_hadoop_config(os.path.join(hadoop_conf_dir, 'core-site.xml'),
-                        [('fs.defaultFS', 'hdfs://%(head)s/' % env)])
+                        [('fs.default.name', 'hdfs://%(head)s/' % env)])
+
+
+def set_mapreduce_cluster():
+    write_hadoop_config(os.path.join(env['hadoop_conf'], 'mapred-site.xml'),
+                        [('mapred.job.tracker', '%(head)s:50030' % env),
+                         ('mapred.system.dir', '/hadoop/mapred'),
+                         ])
 
 
 def set_yarn_cluster():
@@ -179,10 +186,11 @@ def set_hive_cluster():
     """
     write_hadoop_config(
         os.path.join(env['hive_conf'], 'hive-site.xml'),
-        [('mapred.job.tracker', '%(head)s' % env),
-         ('javax.jdo.option.ConnectionURL', '/tmp/metastore.db'),
+        [('mapred.job.tracker', '%(head)s:50030' % env),
+         ('javax.jdo.option.ConnectionURL',
+          'jdbc:derby:;databaseName=/tmp/metastore.db;create=true'),
          ('hive.metastore.warehouse.dir',
-          'hdfs://%(head)s/user/hive/warehouse'),
+          'hdfs://%(head)s/user/hive/warehouse' % env),
          ])
 
 
@@ -233,17 +241,22 @@ def start(nodes):
             fobj.write('export JAVA_HOME=%s\n' % os.environ['JAVA_HOME'])
 
     set_hdfs_cluster(num_datanodes)
-    set_yarn_cluster()
+    set_mapreduce_cluster()
     execute(prepare_directory, hosts=[env.head])
     execute(prepare_directory, hosts=env.workers[:num_datanodes])
-    run('yes Y | HADOOP_CONF_DIR=%(hadoop_conf)s '
-        '%(hadoop_bin)s/hdfs namenode -format vsfs' % env)
-    run('%(hadoop_sbin)s/hadoop-daemon.sh --config %(hadoop_conf)s '
-        '--script hdfs start namenode' % env)
-    execute(start_datanode, hosts=env.workers[:num_datanodes])
-    run('%(hadoop_sbin)s/yarn-daemon.sh --config %(hadoop_conf)s '
-        'start resourcemanager' % env)
-    execute(start_nodemanager, hosts=env.workers[:num_datanodes])
+    run('yes Y | %(hadoop_bin)s/hadoop namenode -format' % env)
+    run('%(hadoop_bin)s/start-dfs.sh' % env)
+    run('%(hadoop_bin)s/start-mapred.sh' % env)
+    # Hadoop 2.0+
+    #set_yarn_cluster()
+    #run('yes Y | HADOOP_CONF_DIR=%(hadoop_conf)s '
+    #    '%(hadoop_bin)s/hdfs namenode -format vsfs' % env)
+    #run('%(hadoop_sbin)s/hadoop-daemon.sh --config %(hadoop_conf)s '
+    #    '--script hdfs start namenode' % env)
+    #execute(start_datanode, hosts=env.workers[:num_datanodes])
+    #run('%(hadoop_sbin)s/yarn-daemon.sh --config %(hadoop_conf)s '
+    #    'start resourcemanager' % env)
+    #execute(start_nodemanager, hosts=env.workers[:num_datanodes])
 
 
 @task
@@ -276,9 +289,9 @@ def start_hive(nodes):
     execute(start, num_nodes)
 
     # Prepares the directories for Hive
-    run('%(hadoop_bin)s/hadoop fs -mkdir -p hdfs://%(head)s/tmp' % env)
+    run('%(hadoop_bin)s/hadoop fs -mkdir hdfs://%(head)s/tmp' % env)
     run('%(hadoop_bin)s/hadoop fs '
-        '-mkdir -p hdfs://%(head)s/user/hive/warehouse' % env)
+        '-mkdir hdfs://%(head)s/user/hive/warehouse' % env)
     run('%(hadoop_bin)s/hadoop fs -chmod g+w hdfs://%(head)s/tmp' % env)
     run('%(hadoop_bin)s/hadoop fs -chmod g+w '
         'hdfs://%(head)s/user/hive/warehouse' % env)
@@ -304,12 +317,14 @@ def stop_nodemanager():
 def stop(**kwargs):
     """Stop a hadoop cluster.
     """
-    run('%(hadoop_sbin)s/hadoop-daemon.sh --config %(hadoop_conf)s '
-        '--script hdfs stop namenode' % env)
-    execute(stop_datanode, hosts=env.workers)
-    run('%(hadoop_sbin)s/yarn-daemon.sh --config %(hadoop_conf)s '
-        'stop resourcemanager' % env)
-    execute(stop_nodemanager, hosts=env.workers)
+    run('%(hadoop_bin)s/stop-dfs.sh' % env)
+    run('%(hadoop_bin)s/stop-mapred.sh' % env)
+#    run('%(hadoop_sbin)s/hadoop-daemon.sh --config %(hadoop_conf)s '
+#        '--script hdfs stop namenode' % env)
+#    execute(stop_datanode, hosts=env.workers)
+#    run('%(hadoop_sbin)s/yarn-daemon.sh --config %(hadoop_conf)s '
+#        'stop resourcemanager' % env)
+#    execute(stop_nodemanager, hosts=env.workers)
 
 
 @task
@@ -343,8 +358,7 @@ def init_hbase(num_indices):
 
 
 def run_hive(params):
-    run("HADOOP_HOME=%(hadoop_dir)s %(hive_bin)s/hive "
-        "--hiveconf mapreduce.jobtracker.address=%(head)s " % env + params)
+    run("HADOOP_HOME=%(hadoop_dir)s %(hive_bin)s/hive " % env + params)
 
 
 def insert_records(slaves, indices, records, **kwargs):
