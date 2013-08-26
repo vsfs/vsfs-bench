@@ -61,6 +61,9 @@ def load_config():
     env.hbase_dir = os.path.join(SCRIPT_DIR, base_dir(HBASE_URL))
     env.hbase_bin = os.path.join(env.hbase_dir, 'bin')
     env.hbase_conf = os.path.join(env.hbase_dir, 'conf')
+    env.hive_dir = os.path.join(SCRIPT_DIR, base_dir(HIVE_URL))
+    env.hive_bin = os.path.join(env.hive_dir, 'bin')
+    env.hive_conf = os.path.join(env.hive_dir, 'conf')
 
     if not os.path.exists(NODE_FILE):
         raise UserWarning("You must create a node list file {}"
@@ -165,6 +168,18 @@ def set_hbase_cluster(num_datanodes):
             fobj.write('%s\n' % node)
 
 
+def set_hive_cluster():
+    """Sets the configuration for the hive
+    """
+    write_hadoop_config(
+        os.path.join(env['hive_conf'], 'hive-site.xml'),
+        [('mapred.job.tracker', '%(head)s' % env),
+         ('javax.jdo.option.ConnectionURL', '/tmp/metastore.db'),
+         ('hive.metastore.warehouse.dir',
+          'hdfs://%(head)s/user/hive/warehouse'),
+         ])
+
+
 @parallel
 def prepare_directory():
     """Make directories for namenode and datanode.
@@ -249,13 +264,20 @@ def start_hive(nodes):
     """
     num_nodes = int(nodes)
     execute(download_tarball, HIVE_URL)
+
+    # Starts Hadoop first
     execute(start, num_nodes)
+
+    # Prepares the directories for Hive
     run('%(hadoop_bin)s/hadoop fs -mkdir -p hdfs://%(head)s/tmp' % env)
     run('%(hadoop_bin)s/hadoop fs '
         '-mkdir -p hdfs://%(head)s/user/hive/warehouse' % env)
     run('%(hadoop_bin)s/hadoop fs -chmod g+w hdfs://%(head)s/tmp' % env)
     run('%(hadoop_bin)s/hadoop fs -chmod g+w '
         'hdfs://%(head)s/user/hive/warehouse' % env)
+
+    # Sets the mapreduce tracker address for Hive.
+    set_hive_cluster()
 
 
 @parallel
@@ -311,6 +333,11 @@ def hbase_dir():
 @roles('head')
 def init_hbase(num_indices):
     create_indices('hbase', num_indices)
+
+
+def run_hive(params):
+    run("HADOOP_HOME=%(hadoop_dir)s %(hive_bin)s/hive "
+        "--hiveconf mapreduce.jobtracker.address=%(head)s " % env + params)
 
 
 def insert_records(slaves, indices, records, **kwargs):

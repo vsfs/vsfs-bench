@@ -64,7 +64,7 @@ def download_tarball(url, output=None):
     filename = os.path.basename(output)
     if filename.endswith('.tar.gz') or filename.endswith('.tgz'):
         local("tar -xzf %s" % filename)
-    elif filename.endswith('.tar.bz'):
+    elif filename.endswith('.tar.bz') or filename.endswith('.tar.bz2'):
         local("tar -xjf %s" % filename)
     return True
 

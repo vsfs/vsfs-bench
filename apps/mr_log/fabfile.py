@@ -16,11 +16,14 @@
 
 
 from __future__ import print_function
-from fabric.api import task, local, lcd, execute, run, roles, settings
+from fabric.api import task, local, cd, lcd, execute, run, roles, settings
+import csv
 import datetime
+import gzip
 import numpy as np
 import os
 import random
+import multiprocessing as mp
 import shutil
 import sys
 sys.path.append('../..')
@@ -39,7 +42,8 @@ BASE_DIR = os.path.join(SCRIPT_DIR, 'testdata/base')
 TRITON_SORT_URL = 'http://www.macesystems.org/wp-uploads/2012/04/' \
                   'tritonsort_log_with_bad_node.tar.bz2'
 
-__all__ = ['start', 'stop', 'gen_input', 'index_inputs', 'download_traces']
+__all__ = ['start', 'stop', 'gen_input', 'index_inputs', 'download_traces',
+           'import_hive_data', 'parse_tritonsort_log']
 
 
 @task
@@ -156,3 +160,73 @@ def index_inputs():
     Before running index_inputs(), the cluster must be first started.
     """
     execute(import_namespace, host=vsfs.env['head'])
+
+
+def _parse_tritonsort_log(args):
+    inpath, outpath = args
+    print(inpath, outpath)
+    with gzip.GzipFile(inpath) as logfile, open(outpath, 'w') as outcsv:
+        csvwriter = csv.writer(outcsv, delimiter=',')
+        for line in logfile:
+            fields = line.split()
+            timestamp = fields[0]
+            record_type = fields[1]  # event or state
+            name = fields[2]
+            value_name = ''
+            value = ''
+            if len(fields) > 3:
+                value_name, value = fields[3].split('=')
+            csvwriter.writerow([timestamp, record_type, name,
+                                value_name, value])
+
+
+@task
+def parse_tritonsort_log():
+    input_path = os.path.join(SCRIPT_DIR,
+                              'tritonsort_log_with_bad_node/parsed')
+    output_dir = os.path.join(SCRIPT_DIR, 'testdata/csv')
+    if os.path.exists(output_dir):
+        shutil.rmtree(output_dir)
+    os.makedirs(output_dir)
+
+    pool = mp.Pool(4)
+    args = []
+    for parsed_log in os.listdir(input_path):
+        filename = parsed_log.split('.')[0]
+        csvfile = os.path.join(output_dir, filename + '.csv')
+        args.append((os.path.join(input_path, parsed_log), csvfile))
+    pool.map(_parse_tritonsort_log, args)
+
+
+@roles('head')
+@task
+def import_hive_data():
+#    csv_dir = os.path.join(SCRIPT_DIR, 'testdata/csv')
+#    with settings(warn_only=True):
+#        result = run("%(hadoop_bin)s/hadoop fs -test -d hdfs://%(head)s/csv" %
+#                     hadoop.env)
+#        if result.return_code == 0:
+#            run("%(hadoop_bin)s/hadoop fs -rm -R hdfs://%(head)s/csv" %
+#                hadoop.env)
+#    run("%s/hadoop fs -copyFromLocal %s hdfs://%s/" %
+#        (hadoop.env['hadoop_bin'], csv_dir, hadoop.env['head']))
+
+    # Initialize Hive SQL
+    init_sql = os.path.join(SCRIPT_DIR, 'testdata/hive.sql')
+    with open(init_sql, 'w') as sqlfile:
+        sqlfile.write("""use default;
+DROP TABLE IF EXISTS log;
+CREATE EXTERNAL TABLE log (time double, type string, event string,
+value_name string, value double )
+COMMENT "log table"
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
+LOCATION 'hdfs://%s/csv';
+SELECT * FROM log LIMIT 3;
+
+CREATE INDEX idx ON TABLE log(event)
+AS 'org.apache.hadoop.hive.ql.index.compact.CompactIndexHandler'
+WITH DEFERRED REBUILD;
+""" % hadoop.env['head'])
+
+    with cd(SCRIPT_DIR):
+        hadoop.run_hive("-f %s" % init_sql)
