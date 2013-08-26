@@ -206,7 +206,7 @@ def import_hive_data(**kwargs):
     Optional parameters:
     @param create_index=False
     """
-    do_create_index = kwargs.get('create_index', 0)
+    do_create_index = kwargs.get('create_index', 1)
     csv_dir = os.path.join(SCRIPT_DIR, 'testdata/csv')
     with settings(warn_only=True):
         result = run("%(hadoop_bin)s/hadoop fs -test -d hdfs://%(head)s/csv" %
@@ -234,6 +234,8 @@ SELECT * FROM log LIMIT 3;
 CREATE INDEX idx ON TABLE log(event, value_name, value)
 AS 'org.apache.hadoop.hive.ql.index.compact.CompactIndexHandler'
 WITH DEFERRED REBUILD;
+ALTER INDEX idx ON log REBUILD;
+SHOW FORMATED INDEX ON log;
 """)
 
     with cd(SCRIPT_DIR):

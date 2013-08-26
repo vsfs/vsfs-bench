@@ -148,6 +148,12 @@ def set_hdfs_cluster(num_datanodes):
                         [('fs.defaultFS', 'hdfs://%(head)s/' % env)])
 
 
+def set_yarn_cluster():
+    write_hadoop_config(os.path.join(env['hadoop_conf'], 'yarn-site.xml'),
+                        [('yarn.resourcemanager.address',
+                          '%(head)s:50030' % env),
+                         ])
+
 def set_hbase_cluster(num_datanodes):
     """Sets the configurations for hbase cluster.
     """
@@ -227,6 +233,7 @@ def start(nodes):
             fobj.write('export JAVA_HOME=%s\n' % os.environ['JAVA_HOME'])
 
     set_hdfs_cluster(num_datanodes)
+    set_yarn_cluster()
     execute(prepare_directory, hosts=[env.head])
     execute(prepare_directory, hosts=env.workers[:num_datanodes])
     run('yes Y | HADOOP_CONF_DIR=%(hadoop_conf)s '
