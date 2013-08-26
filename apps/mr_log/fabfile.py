@@ -200,16 +200,22 @@ def parse_tritonsort_log():
 
 @roles('head')
 @task
-def import_hive_data():
-#    csv_dir = os.path.join(SCRIPT_DIR, 'testdata/csv')
-#    with settings(warn_only=True):
-#        result = run("%(hadoop_bin)s/hadoop fs -test -d hdfs://%(head)s/csv" %
-#                     hadoop.env)
-#        if result.return_code == 0:
-#            run("%(hadoop_bin)s/hadoop fs -rm -R hdfs://%(head)s/csv" %
-#                hadoop.env)
-#    run("%s/hadoop fs -copyFromLocal %s hdfs://%s/" %
-#        (hadoop.env['hadoop_bin'], csv_dir, hadoop.env['head']))
+def import_hive_data(**kwargs):
+    """Import dataset into Hive as external table (param:create_index=1)
+
+    Optional parameters:
+    @param create_index=False
+    """
+    do_create_index = kwargs.get('create_index', 0)
+    csv_dir = os.path.join(SCRIPT_DIR, 'testdata/csv')
+    with settings(warn_only=True):
+        result = run("%(hadoop_bin)s/hadoop fs -test -d hdfs://%(head)s/csv" %
+                     hadoop.env)
+        if result.return_code == 0:
+            run("%(hadoop_bin)s/hadoop fs -rm -R hdfs://%(head)s/csv" %
+                hadoop.env)
+    run("%s/hadoop fs -copyFromLocal %s hdfs://%s/" %
+        (hadoop.env['hadoop_bin'], csv_dir, hadoop.env['head']))
 
     # Initialize Hive SQL
     init_sql = os.path.join(SCRIPT_DIR, 'testdata/hive.sql')
@@ -222,11 +228,13 @@ COMMENT "log table"
 ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
 LOCATION 'hdfs://%s/csv';
 SELECT * FROM log LIMIT 3;
-
-CREATE INDEX idx ON TABLE log(event)
+""" % hadoop.env['head'])
+        if do_create_index:
+            sqlfile.write("""
+CREATE INDEX idx ON TABLE log(event, value_name, value)
 AS 'org.apache.hadoop.hive.ql.index.compact.CompactIndexHandler'
 WITH DEFERRED REBUILD;
-""" % hadoop.env['head'])
+""")
 
     with cd(SCRIPT_DIR):
         hadoop.run_hive("-f %s" % init_sql)
