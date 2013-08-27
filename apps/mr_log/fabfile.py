@@ -23,6 +23,7 @@ import gzip
 import numpy as np
 import os
 import random
+import subprocess
 import multiprocessing as mp
 import shutil
 import sys
@@ -43,7 +44,7 @@ TRITON_SORT_URL = 'http://www.macesystems.org/wp-uploads/2012/04/' \
                   'tritonsort_log_with_bad_node.tar.bz2'
 
 __all__ = ['start', 'stop', 'gen_input', 'index_inputs', 'download_traces',
-           'import_hive_data', 'parse_tritonsort_log']
+           'import_hive_data', 'parse_tritonsort_log', 'test_query_hive']
 
 
 @task
@@ -226,9 +227,18 @@ CREATE EXTERNAL TABLE log (time double, type string, event string,
 value_name string, value double )
 COMMENT "log table"
 ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
-LOCATION 'hdfs://%s/csv';
+LOCATION 'hdfs://%(head)s/csv';
+
+DROP TABLE IF EXISTS log_noidx;
+CREATE EXTERNAL TABLE log_noidx (time double, type string, event string,
+value_name string, value double )
+COMMENT "log table without index"
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
+LOCATION 'hdfs://%(head)s/csv';
+
 SELECT * FROM log LIMIT 3;
-""" % hadoop.env['head'])
+SELECT * FROM log LIMIT 3;
+""" % hadoop.env)
         if do_create_index:
             sqlfile.write("""
 CREATE INDEX idx ON TABLE log(event, value_name, value)
@@ -240,3 +250,47 @@ SHOW INDEX ON log;
 
     with cd(SCRIPT_DIR):
         hadoop.run_hive("-f %s" % init_sql)
+
+
+@task
+@roles('head')
+def test_query_hive(threshold=100000):
+    threshold = int(threshold)
+    sql_template = """SELECT hour, count(hour) AS hrcount FROM
+(SELECT round(time / 60) AS hour FROM %s WHERE value_name = 'Writer_5_runtime'
+and value > %d) t2 GROUP BY hour ORDER BY hrcount DESC LIMIT 3;
+"""
+    with cd(SCRIPT_DIR):
+        hadoop.run_hive('-e "%s"' % (sql_template % ('log', threshold)))
+        hadoop.run_hive('-e "%s"' % (sql_template % ('log_noidx', threshold)))
+
+    # Hive on VSFS
+    with settings(warn_only=True):
+        result = run("%(hadoop_bin)s/hadoop fs -test -d "
+                     "hdfs://%(head)s/hivevsfs" % hadoop.env)
+        if result.return_code == 0:
+            run("%(hadoop_bin)s/hadoop fs -rmr hdfs://%(head)s/hivevsfs" %
+                hadoop.env)
+
+    output = subprocess.check_output([os.path.join(SCRIPT_DIR, 'mrlog.py'), 'extract', '-t',
+                                      str(threshold), os.path.join(SCRIPT_DIR, 'testdata/csv')])
+
+    run("%(hadoop_bin)s/hadoop fs -mkdir hdfs://%(head)s/hivevsfs" % hadoop.env)
+    for filename in map(str.strip, output.split('\n')):
+        if filename:
+            run("%s/hadoop fs -cp hdfs://%s/csv/%s hdfs://%s/hivevsfs" %
+                (hadoop.env['hadoop_bin'], hadoop.env['head'], filename,
+                 hadoop.env['head']))
+
+    sql_create_vsfs_table = """
+DROP TABLE IF EXISTS vsfs;
+CREATE EXTERNAL TABLE vsfs (time double, type string, event string,
+value_name string, value double )
+COMMENT 'Hive On Vsfs'
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
+LOCATION 'hdfs://%(head)s/hivevsfs';
+""" % hadoop.env
+    hadoop.run_hive('-e "%s"' % sql_create_vsfs_table)
+
+    with cd(SCRIPT_DIR):
+        hadoop.run_hive('-e "%s"' % (sql_template % ('vsfs', threshold)))

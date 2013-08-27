@@ -15,8 +15,28 @@
 # limitations under the License.
 
 from __future__ import print_function
+from collections import defaultdict
 import argparse
 import os
+
+
+def extract_features(args):
+    """Extract intersting features
+    """
+    for csvfile in os.listdir(args.csvdir):
+        path = os.path.join(args.csvdir, csvfile)
+        with open(path) as fobj:
+            max_value = defaultdict(float)
+            for line in fobj:
+                fields = line.split(',')
+                if fields[3] == 'Writer_5_runtime':
+                    value = float(fields[4])
+                    max_value[fields[3]] = max(max_value[fields[3]], value)
+            if args.threshold:
+                if max_value['Writer_5_runtime'] >= args.threshold:
+                    print(csvfile)
+            else:
+                print(csvfile, max_value)
 
 
 def import_namespace(args):
@@ -44,6 +64,13 @@ def main():
     parser_import.add_argument('srcdir')
     parser_import.add_argument('tardir')
     parser_import.set_defaults(func=import_namespace)
+
+    parser_extract = subparsers.add_parser('extract')
+    parser_extract.add_argument(
+        '-t', '--threshold', type=int, metavar='NUM', default=0,
+        help='Sets the threshold to print filename')
+    parser_extract.add_argument('csvdir')
+    parser_extract.set_defaults(func=extract_features)
 
     args = parser.parse_args()
     args.func(args)

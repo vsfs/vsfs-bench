@@ -46,6 +46,7 @@ RETRY = 10
 DATA_DIR = '/scratch/datadir'
 NAME_DIR = '/scratch/namedir'
 ZOOKEEPER_DIR = '/scratch/zookeeper'
+MAPRED_TRACKER_PORT = 50031
 
 
 def load_config():
@@ -64,6 +65,7 @@ def load_config():
     env.hive_dir = os.path.join(SCRIPT_DIR, base_dir(HIVE_URL))
     env.hive_bin = os.path.join(env.hive_dir, 'bin')
     env.hive_conf = os.path.join(env.hive_dir, 'conf')
+    env.mapred_tracker_port = MAPRED_TRACKER_PORT
 
     if not os.path.exists(NODE_FILE):
         raise UserWarning("You must create a node list file {}"
@@ -150,7 +152,8 @@ def set_hdfs_cluster(num_datanodes):
 
 def set_mapreduce_cluster():
     write_hadoop_config(os.path.join(env['hadoop_conf'], 'mapred-site.xml'),
-                        [('mapred.job.tracker', '%(head)s:50030' % env),
+                        [('mapred.job.tracker',
+                          '%(head)s:%(mapred_tracker_port)d' % env),
                          ('mapred.system.dir', '/hadoop/mapred'),
                          ])
 
@@ -158,7 +161,7 @@ def set_mapreduce_cluster():
 def set_yarn_cluster():
     write_hadoop_config(os.path.join(env['hadoop_conf'], 'yarn-site.xml'),
                         [('yarn.resourcemanager.address',
-                          '%(head)s:50030' % env),
+                          '%(head)s:%(mapred_tracker_port)d' % env),
                          ])
 
 def set_hbase_cluster(num_datanodes):
@@ -186,7 +189,7 @@ def set_hive_cluster():
     """
     write_hadoop_config(
         os.path.join(env['hive_conf'], 'hive-site.xml'),
-        [('mapred.job.tracker', '%(head)s:50030' % env),
+        [('mapred.job.tracker', '%(head)s:%(mapred_tracker_port)s' % env),
          ('javax.jdo.option.ConnectionURL',
           'jdbc:derby:;databaseName=/tmp/metastore.db;create=true'),
          ('hive.metastore.warehouse.dir',
