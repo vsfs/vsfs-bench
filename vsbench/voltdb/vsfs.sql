@@ -6,7 +6,6 @@ CREATE TABLE index_meta (
 	key_type SMALLINT NOT NULL,
 );
 
-
 /* File Mapping */
 CREATE TABLE file_meta (
 	file_id BIGINT UNIQUE,
@@ -20,7 +19,8 @@ CREATE INDEX hash_file_id ON file_meta (file_id);
 CREATE TABLE big_index_table_uint64 (
 	path VARCHAR(1024) NOT NULL,
 	name VARCHAR(256) NOT NULL,
-	file_key BIGINT UNIQUE,
+	file_key BIGINT,
 );
 
-CREATE INDEX big_index_file_key ON big_index_table_uint64 (file_key);
+CREATE INDEX big_index_file_key ON big_index_table_uint64
+(path, name, file_key);

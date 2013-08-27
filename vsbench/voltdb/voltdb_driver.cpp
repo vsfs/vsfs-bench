@@ -24,6 +24,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/utility.hpp>
 #include <gflags/gflags.h>
+#include <glog/logging.h>
 #include <string>
 #include <vector>
 #include "vsbench/voltdb/voltdb_driver.h"
@@ -79,12 +80,15 @@ Status VoltDBDriver::import(const vector<string>& files) {
   vector<voltdb::Parameter> param_types(2);
   param_types[0] = voltdb::Parameter(voltdb::WIRE_TYPE_BIGINT);
   param_types[1] = voltdb::Parameter(voltdb::WIRE_TYPE_STRING);
-  voltdb::Procedure procedure("file_meta.INSERT", param_types);
+  voltdb::Procedure procedure("FILE_META.insert", param_types);
   for (const auto& file : files) {
     voltdb::ParameterSet* params = procedure.params();
     auto hash = PathUtil::path_to_hash(file);
     params->addInt64(hash).addString(file);
-    client_->client.invoke(procedure);
+    auto response = client_->client.invoke(procedure);
+    if (response.failure()) {
+      LOG(ERROR) << "Failed to insert file: " << response.toString();
+    }
   }
   return Status::OK;
 }
@@ -94,6 +98,24 @@ Status VoltDBDriver::clear() {
 }
 
 Status VoltDBDriver::insert(const RecordVector& records) {
+  // Insert into Big Single Index Table.
+  vector<voltdb::Parameter> param_types(3);
+  param_types[0] = voltdb::Parameter(voltdb::WIRE_TYPE_STRING);
+  param_types[1] = voltdb::Parameter(voltdb::WIRE_TYPE_STRING);
+  param_types[2] = voltdb::Parameter(voltdb::WIRE_TYPE_BIGINT);
+  voltdb::Procedure procedure("BIG_INDEX_TABLE_UINT64.insert", param_types);
+  voltdb::ParameterSet* params = procedure.params();
+  for (const auto& record : records) {
+    // TODO(eddyxu): batch insert.
+    string file_path, index_name;
+    uint64_t key;
+    std::tie(file_path, index_name, key) = record;
+    params->addString(file_path).addString(index_name).addInt64(key);
+    auto response = client_->client.invoke(procedure);
+    if (response.failure()) {
+      LOG(ERROR) << "Failed to insert file: " << response.toString();
+    }
+  }
   return Status::OK;
 }
 

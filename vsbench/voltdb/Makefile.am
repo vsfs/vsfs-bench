@@ -17,11 +17,14 @@ libvsbench_voltdb_a_LIBADD = \
   voltdb-client-cpp-linux-x86_64-3.0/libevent.a \
   voltdb-client-cpp-linux-x86_64-3.0/libevent_pthreads.a
 
+CLASSPATH=./voltdb-3.4/voltdb/voltdb-3.4.jar:./voltdb-3.4/lib/*.jar
 download:
 	fab download
 
-vsfs.jar: vsfs.sql
-	voltdb-3.*/bin/voltdb compile -o vsfs.jar vsfs.sql
+vsfs.jar: vsfs.sql src/vsbench/procedures/*.java
+	javac -classpath ${CLASSPATH} \
+		src/vsbench/procedures/*.java -d obj
+	voltdb-3.*/bin/voltdb compile --classpath obj -o vsfs.jar vsfs.sql
 
 
 .PHONY: download
