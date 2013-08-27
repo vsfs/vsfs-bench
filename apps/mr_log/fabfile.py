@@ -272,10 +272,12 @@ and value > %d) t2 GROUP BY hour ORDER BY hrcount DESC LIMIT 3;
             run("%(hadoop_bin)s/hadoop fs -rmr hdfs://%(head)s/hivevsfs" %
                 hadoop.env)
 
-    output = subprocess.check_output([os.path.join(SCRIPT_DIR, 'mrlog.py'), 'extract', '-t',
-                                      str(threshold), os.path.join(SCRIPT_DIR, 'testdata/csv')])
+    output = subprocess.check_output(
+        [os.path.join(SCRIPT_DIR, 'mrlog.py'), 'extract', '-t',
+         str(threshold), os.path.join(SCRIPT_DIR, 'testdata/csv')])
 
-    run("%(hadoop_bin)s/hadoop fs -mkdir hdfs://%(head)s/hivevsfs" % hadoop.env)
+    run("%(hadoop_bin)s/hadoop fs -mkdir hdfs://%(head)s/hivevsfs" %
+        hadoop.env)
     for filename in map(str.strip, output.split('\n')):
         if filename:
             run("%s/hadoop fs -cp hdfs://%s/csv/%s hdfs://%s/hivevsfs" %
