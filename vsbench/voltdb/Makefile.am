@@ -21,9 +21,8 @@ CLASSPATH=./voltdb-3.4/voltdb/voltdb-3.4.jar:./voltdb-3.4/lib/*.jar
 download:
 	fab download
 
-vsfs.jar: vsfs.sql src/vsbench/procedures/*.java
-	javac -classpath ${CLASSPATH} \
-		src/vsbench/procedures/*.java -d obj
+vsfs.jar: vsfs.sql
+# javac -classpath ${CLASSPATH} src/vsbench/procedures/*.java -d obj
 	voltdb-3.*/bin/voltdb compile --classpath obj -o vsfs.jar vsfs.sql
 
 

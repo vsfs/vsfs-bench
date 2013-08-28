@@ -17,23 +17,27 @@
 #include <Client.h>
 #include <Parameter.hpp>
 #include <ParameterSet.hpp>
+#include <ProcedureCallback.hpp>
 #include <Row.hpp>
 #include <Table.h>
 #include <TableIterator.h>
 #include <WireType.h>
 #include <boost/algorithm/string.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/utility.hpp>
 #include <gflags/gflags.h>
 #include <glog/logging.h>
+#include <limits>
 #include <string>
 #include <vector>
 #include "vsbench/voltdb/voltdb_driver.h"
 #include "vsfs/common/path_util.h"
+#include "vsfs/common/complex_query.h"
 
 using std::string;
 using std::vector;
 
-DEFINE_string(voltdb_hosts, "", "Sets hostname by a comman separated string.");
+DEFINE_string(voltdb_host, "", "Sets hostname by a comman separated string.");
 DEFINE_string(voltdb_schema, "", "Choose one schema of voltdb table to test:"
               "normal/single.");
 
@@ -49,6 +53,17 @@ struct VoltDBClient {
   voltdb::Client client;
 };
 
+class EmptyCallback : public voltdb::ProcedureCallback {
+ public:
+  bool callback(voltdb::InvocationResponse response) throw (voltdb::Exception) {  // NOLINT
+    if (response.failure()) {
+      LOG(ERROR) << "Failed to insert file: " << response.toString();
+      return false;
+    }
+    return true;
+  }
+};
+
 VoltDBDriver::VoltDBDriver() : client_(new VoltDBClient) {
 }
 
@@ -57,7 +72,7 @@ VoltDBDriver::~VoltDBDriver() {
 
 Status VoltDBDriver::connect() {
   vector<string> hosts;
-  boost::split(hosts, FLAGS_voltdb_hosts, boost::is_any_of(","));
+  boost::split(hosts, FLAGS_voltdb_host, boost::is_any_of(","));
   if (hosts.empty()) {
     return Status(-1, "No voltdb host is provided.");
   }
@@ -105,24 +120,52 @@ Status VoltDBDriver::insert(const RecordVector& records) {
   param_types[2] = voltdb::Parameter(voltdb::WIRE_TYPE_BIGINT);
   voltdb::Procedure procedure("BIG_INDEX_TABLE_UINT64.insert", param_types);
   voltdb::ParameterSet* params = procedure.params();
+
+  boost::shared_ptr<EmptyCallback> callback(new EmptyCallback);
   for (const auto& record : records) {
     // TODO(eddyxu): batch insert.
     string file_path, index_name;
     uint64_t key;
     std::tie(file_path, index_name, key) = record;
     params->addString(file_path).addString(index_name).addInt64(key);
-    auto response = client_->client.invoke(procedure);
-    if (response.failure()) {
-      LOG(ERROR) << "Failed to insert file: " << response.toString();
-    }
+    client_->client.invoke(procedure, callback);
   }
+  while (!client_->client.drain()) {}
   return Status::OK;
 }
 
 Status VoltDBDriver::search(const ComplexQuery& query, vector<string>* files) {
+  vector<voltdb::Parameter> param_types(3);
+  param_types[0] = voltdb::Parameter(voltdb::WIRE_TYPE_STRING);
+  param_types[1] = voltdb::Parameter(voltdb::WIRE_TYPE_BIGINT);
+  param_types[2] = voltdb::Parameter(voltdb::WIRE_TYPE_BIGINT);
+  voltdb::Procedure procedure("SearchFile", param_types);
+  auto index_names = query.get_names_of_range_queries();
+  auto name = index_names[0];
+  const auto range_query  = query.range_query(name);
+  int64_t lower = std::numeric_limits<int64_t>::min();
+  int64_t upper = std::numeric_limits<int64_t>::max();
+  if (!range_query->lower.empty()) {
+    lower = std::stol(range_query->lower);
+  }
+  if (!range_query->upper.empty()) {
+    upper = std::stol(range_query->upper);
+  }
+  voltdb::ParameterSet* params = procedure.params();
+  params->addString(name).addInt64(lower).addInt64(upper);
+  auto response = client_->client.invoke(procedure);
+  if (response.failure()) {
+    LOG(ERROR) << "Failed to search files: " << response.toString();
+  }
+  auto count = response.results()[0].rowCount();
+  files->reserve(count);
+  auto iter = response.results()[0].iterator();
+  for (int i = 0; i < count; i++) {
+    auto row = iter.next();
+    files->push_back(row.getString(0));
+  }
   return Status::OK;
 }
-
 
 }  // namespace vsbench
 }  // namespace vsfs

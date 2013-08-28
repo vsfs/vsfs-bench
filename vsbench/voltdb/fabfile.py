@@ -91,14 +91,15 @@ def start_others():
 def start(num_servers):
     """Starts a VoltDB cluster.
     """
-    num_servers = int(num_servers)
-    create_deployment_file(num_servers)
+    num_servers = int(num_servers) - 1
+    create_deployment_file(num_servers + 1)
 
     fablib.run_background('%(voltdb)s create host %(head)s ' % env +
                           'catalog %s/vsfs.jar ' % SCRIPT_DIR +
                           'deployment %s/deployment.xml' % SCRIPT_DIR)
-    local('sleep 2')
-    execute(start_others, hosts=env.workers[:num_servers-1])
+    if num_servers:
+        local('sleep 2')
+        execute(start_others, hosts=env.workers[:num_servers])
 
 
 @roles('head')

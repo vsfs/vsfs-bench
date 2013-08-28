@@ -12,7 +12,7 @@
 
 from __future__ import print_function
 from subprocess import check_output
-from fabric.api import lcd, local
+from fabric.api import lcd, local, settings
 from fabric.colors import yellow, red
 import argparse
 import importlib
@@ -31,13 +31,13 @@ def prepare_cluster(driver, num_shard):
     """
     """
     print(yellow('Preparing cluster..'), file=sys.stderr)
-    with lcd(os.path.join(SCRIPT_DIR, driver)):
+    with settings(warn_only=True), lcd(os.path.join(SCRIPT_DIR, driver)):
         local('fab start:%d' % num_shard)
 
 
 def destory_cluster(driver):
     print(red('Shutting down the cluster.'), file=sys.stderr)
-    with lcd(os.path.join(SCRIPT_DIR, driver)):
+    with settings(warn_only=True), lcd(os.path.join(SCRIPT_DIR, driver)):
         local('fab stop')
 
 
@@ -48,6 +48,7 @@ def parallel_run(params, mpi=False, debug=False):
         run_cmd = 'mpirun --mca orte_base_help_aggregate 0 '
     else:
         run_cmd = 'srun '
+
     run_cmd += ' %s -driver %s -%s_host %s ' % \
                (VSBENCH, args.driver, args.driver, fabfile.env['head'])
     run_cmd += params
@@ -55,6 +56,7 @@ def parallel_run(params, mpi=False, debug=False):
         run_cmd += ' -mpi'
     if debug:
         print(run_cmd, file=sys.stderr)
+    print(run_cmd)
     check_output(run_cmd, shell=True)
 
 
@@ -113,28 +115,34 @@ def test_search(args):
     args.output.write("# Shard Latency\n")
     num_files = args.nfiles
     shard_confs = map(int, args.shards.split(','))
-    destory_cluster()
+    destory_cluster(args.driver)
     time.sleep(3)
     for shard in shard_confs:
-        prepare_cluster(shard)
-        time.sleep(3)
+        prepare_cluster(args.driver, shard)
+        time.sleep(10)
         print(yellow('Populating namespace...'), file=sys.stderr)
         print(yellow('Importing files...'), file=sys.stderr)
-        parallel_run('-op import -records_per_index %d' % num_files)
+        check_output('srun -n 10 %s -driver %s -%s_host %s '
+                     '-op import -records_per_index %d' %
+                     (VSBENCH, args.driver, args.driver, fabfile.env['head'],
+                      num_files), shell=True)
         print(yellow('Building 2 indices, each %d records..' % num_files),
               file=sys.stderr)
-        check_output('srun -n 2 %s -driver %s -%s_host %s '
-                     '-op insert -num_indices 1 -records_per_index %s' %
+        check_output('srun -n 10 %s -driver %s -%s_host %s '
+                     '-op insert -num_indices 10 -records_per_index %s' %
                      (VSBENCH, args.driver, args.driver, fabfile.env['head'],
                       num_files),
                      shell=True)
         start_time = time.time()
-        parallel_run('-op search -query "%s"' %
-                     "/foo/bar?index0>10000&index0<20000")
+        search_cmd = '%s -driver %s -%s_host %s -op search -query "%s"' % \
+                     (VSBENCH, args.driver, args.driver, fabfile.env['head'],
+                      "/foo/bar?index0>10000&index0<20000")
+        print(search_cmd)
+        check_output(search_cmd, shell=True)
         end_time = time.time()
         args.output.write('%d %0.2f\n' % (shard, end_time - start_time))
         args.output.flush()
-        destory_cluster()
+        destory_cluster(args.driver)
     args.output.close()
 
 
@@ -151,7 +159,7 @@ def test_open_search(args):
     destory_cluster()
     time.sleep(3)
     for shard in shard_confs:
-        prepare_cluster(shard)
+        prepare_cluster(args.driver, shard)
         time.sleep(3)
         print(yellow('Populating namespace...'), file=sys.stderr)
         print(yellow('Importing files...'), file=sys.stderr)

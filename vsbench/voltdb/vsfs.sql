@@ -24,3 +24,7 @@ CREATE TABLE big_index_table_uint64 (
 
 CREATE INDEX big_index_file_key ON big_index_table_uint64
 (path, name, file_key);
+
+CREATE PROCEDURE vsbench.procedures.SearchFile AS
+SELECT path FROM big_index_table_uint64 WHERE name = ?
+AND file_key >= ? and file_key <= ?;

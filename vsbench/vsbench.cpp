@@ -75,19 +75,31 @@ namespace vsfs {
 namespace vsbench {
 
 int get_total_clients() {
-  char* env = getenv("SLURM_NTASKS");
-  if (!env) {
-    return -1;
+  if (FLAGS_mpi) {
+    int mpi_size;
+    MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+    return mpi_size;
+  } else {
+    char* env = getenv("SLURM_NTASKS");
+    if (!env) {
+      return -1;
+    }
+    return stoi(env);
   }
-  return stoi(env);
 }
 
 int get_rank() {
-  char* env = getenv("SLURM_LOCALID");
-  if (!env) {
-    return -1;
+  if (FLAGS_mpi) {
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    return rank;
+  } else {
+    char* env = getenv("SLURM_PROCID");
+    if (!env) {
+      return -1;
+    }
+    return stoi(env);
   }
-  return stoi(env);
 }
 
 /**
@@ -234,6 +246,7 @@ void import() {
     for (int i = my_rank * num_files; i < (my_rank + 1) * num_files; i++) {
       files.emplace_back(FLAGS_path + "/file-" + lexical_cast<string>(i));
     }
+    LOG(ERROR) << "INsert from " << *files.begin() << " to " << files.back();
   } else {
     files.reserve(FLAGS_records_per_index);
     for (int i = 0; i < FLAGS_records_per_index; i++) {
