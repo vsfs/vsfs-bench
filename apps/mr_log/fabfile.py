@@ -164,25 +164,44 @@ def index_inputs():
 
 
 def _parse_tritonsort_log(args):
-    inpath, outpath = args
+    """
+    """
+    inpath, outpath, amplify_factor = args
     print(inpath, outpath)
-    with gzip.GzipFile(inpath) as logfile, open(outpath, 'w') as outcsv:
-        csvwriter = csv.writer(outcsv, delimiter=',')
+    last_timestamp = None
+    idx = 0
+    with gzip.GzipFile(inpath) as logfile:
+        outcsv = None
+        csvwriter = None
         for line in logfile:
             fields = line.split()
-            timestamp = fields[0]
+            timestamp = float(fields[0])
+            # One minute per file
+            if not last_timestamp or last_timestamp < timestamp - 10:
+                last_timestamp = timestamp
+                if outcsv:
+                    outcsv.close()
+                outcsv = open(outpath + "-%d.csv" % idx, 'w')
+                csvwriter = csv.writer(outcsv, delimiter=',')
+                idx += 1
             record_type = fields[1]  # event or state
             name = fields[2]
             value_name = ''
             value = ''
             if len(fields) > 3:
                 value_name, value = fields[3].split('=')
-            csvwriter.writerow([timestamp, record_type, name,
-                                value_name, value])
+            for i in range(amplify_factor):
+                csvwriter.writerow([timestamp, record_type, name,
+                                    value_name, value])
+        if outcsv:
+            outcsv.close()
 
 
 @task
-def parse_tritonsort_log():
+def parse_tritonsort_log(**kwargs):
+    """Parses Tritonsort Log and generate CSV
+    """
+    amplify_factor = int(kwargs.get('amplify', 30))
     input_path = os.path.join(SCRIPT_DIR,
                               'tritonsort_log_with_bad_node/parsed')
     output_dir = os.path.join(SCRIPT_DIR, 'testdata/csv')
@@ -194,8 +213,9 @@ def parse_tritonsort_log():
     args = []
     for parsed_log in os.listdir(input_path):
         filename = parsed_log.split('.')[0]
-        csvfile = os.path.join(output_dir, filename + '.csv')
-        args.append((os.path.join(input_path, parsed_log), csvfile))
+        csvfile = os.path.join(output_dir, filename)
+        args.append((os.path.join(input_path, parsed_log), csvfile,
+                     amplify_factor))
     pool.map(_parse_tritonsort_log, args)
 
 
