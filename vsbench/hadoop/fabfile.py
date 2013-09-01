@@ -164,6 +164,7 @@ def set_yarn_cluster():
                           '%(head)s:%(mapred_tracker_port)d' % env),
                          ])
 
+
 def set_hbase_cluster(num_datanodes):
     """Sets the configurations for hbase cluster.
     """
@@ -242,6 +243,8 @@ def start(nodes):
     if ret['<local-only>']:
         with open(os.path.join(env.hadoop_conf, 'hadoop-env.sh'), 'a') as fobj:
             fobj.write('export JAVA_HOME=%s\n' % os.environ['JAVA_HOME'])
+            fobj.write('export export HADOOP_DATANODE_OPTS="-Xmx6g '
+                       '$HADOOP_DATANODE_OPTS"\n')
 
     set_hdfs_cluster(num_datanodes)
     set_mapreduce_cluster()

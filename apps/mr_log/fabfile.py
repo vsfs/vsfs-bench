@@ -199,7 +199,7 @@ def _parse_tritonsort_log(args):
 
 @task
 def parse_tritonsort_log(**kwargs):
-    """Parses Tritonsort Log and generate CSV
+    """Parses Tritonsort Log and generate CSV (param:amplify=30)
     """
     amplify_factor = int(kwargs.get('amplify', 30))
     input_path = os.path.join(SCRIPT_DIR,

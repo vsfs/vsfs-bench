@@ -19,6 +19,9 @@ from collections import defaultdict
 import argparse
 import os
 
+VSFS_UTIL = os.path.join(os.path.dirname(__file__),
+                         '../../lib/vsfs/vsfs/client/vsfs')
+
 
 def extract_features(args):
     """Extract intersting features
@@ -36,7 +39,8 @@ def extract_features(args):
                 if max_value['Writer_5_runtime'] >= args.threshold:
                     print(csvfile)
             else:
-                print(csvfile, max_value)
+                if max_value['Writer_5_runtime'] > 0:
+                    print(csvfile, max_value['Writer_5_runtime'])
 
 
 def import_namespace(args):
