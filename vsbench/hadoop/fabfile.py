@@ -155,6 +155,7 @@ def set_mapreduce_cluster():
                         [('mapred.job.tracker',
                           '%(head)s:%(mapred_tracker_port)d' % env),
                          ('mapred.system.dir', '/hadoop/mapred'),
+                         ('mapred.child.java.opts', '-Xmx6442450944'),
                          ])
 
 
