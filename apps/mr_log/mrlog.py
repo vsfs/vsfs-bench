@@ -18,9 +18,11 @@ from __future__ import print_function
 from collections import defaultdict
 import argparse
 import os
+from subprocess import Popen, PIPE, call, check_output
+from multiprocessing import Pool
 
-VSFS_UTIL = os.path.join(os.path.dirname(__file__),
-                         '../../lib/vsfs/vsfs/client/vsfs')
+SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
+VSFS_UTIL = os.path.join(SCRIPT_DIR, '../../lib/vsfs/vsfs/client/vsfs')
 
 
 def extract_features(args):
@@ -53,6 +55,31 @@ def extract_features(args):
             for name, value in max_values.items():
                 fobj.write('%s %s %f\n' % (csvfile, name, value))
 
+
+def run_index(args):
+    feature, values = args
+    cmd = '%s index --create --name %s -k float -t btree /test' % \
+            (VSFS_UTIL, feature)
+    call(cmd, shell=True)
+    cmd = '%s index -s -n %s' % (VSFS_UTIL, feature)
+    content = ""
+    for csvfile, value in values.items():
+        content += "/test/%s %s\n" % (csvfile, value)
+    p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
+    stdout, stderr = p.communicate(input=content)
+    print(stdout)
+    print(stderr)
+
+
+def index_features(args):
+    records = defaultdict(dict)
+    for line in args.file:
+        fields = line.split()
+        filename, feature, value = fields
+        records[feature][filename] = value
+
+    pool = Pool(processes=8)
+    pool.map(run_index, records.items())
 
 
 def import_namespace(args):
@@ -87,6 +114,14 @@ def main():
         help='Sets the threshold to print filename')
     parser_extract.add_argument('csvdir')
     parser_extract.set_defaults(func=extract_features)
+
+    parser_index = subparsers.add_parser('index')
+    parser_index.add_argument('-H', '--host', default='localhost',
+                              help='set the master node address.')
+    parser_index.add_argument('-p', '--prefix', default='/test',
+                              help='set the prefix of directory to index.')
+    parser_index.add_argument('file', type=argparse.FileType('r'))
+    parser_index.set_defaults(func=index_features)
 
     args = parser.parse_args()
     args.func(args)
