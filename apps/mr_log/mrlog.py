@@ -26,21 +26,33 @@ VSFS_UTIL = os.path.join(os.path.dirname(__file__),
 def extract_features(args):
     """Extract intersting features
     """
+    results = {}
     for csvfile in os.listdir(args.csvdir):
         path = os.path.join(args.csvdir, csvfile)
         with open(path) as fobj:
             max_value = defaultdict(float)
             for line in fobj:
+                line = line.strip()
                 fields = line.split(',')
-                if fields[3] == 'Writer_5_runtime':
-                    value = float(fields[4])
-                    max_value[fields[3]] = max(max_value[fields[3]], value)
+                if len(fields) < 5 or not fields[4]:
+                    continue
+                name = fields[3]
+                value = fields[4]
+                max_value[name] = max(max_value[name], value)
             if args.threshold:
                 if max_value['Writer_5_runtime'] >= args.threshold:
                     print(csvfile)
             else:
                 if max_value['Writer_5_runtime'] > 0:
                     print(csvfile, max_value['Writer_5_runtime'])
+
+        results[csvfile] = max_value
+
+    with open('features.txt', 'w') as fobj:
+        for csvfile, max_values in results.items():
+            for name, value in max_values.items():
+                fobj.write('%s %s %f\n' % (csvfile, name, value))
+
 
 
 def import_namespace(args):

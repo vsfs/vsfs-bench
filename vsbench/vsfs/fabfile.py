@@ -275,15 +275,15 @@ def run_filebench():
 @roles('head')
 def test_filebench_with_vsfs(**kwargs):
     """Run Filebench on lustre with vsfs mounted.
-       Keyword options:
-       @param num_files
-       @param num_threads
-       @param test_dir
+    Keyword options:
+    @param num_files
+    @param num_threads
+    @param test_dir
     """
     num_files = int(kwargs.get('num_files', '100000'))
     num_threads = int(kwargs.get('num_threads', '16'))
     test_dir = kwargs.get('test_dir', MNT_POINT)
-    fablib.mount_vsfs(BASE_DIR, MNT_POINT)
+    fablib.mount_vsfs(BASE_DIR, MNT_POINT, env.nodes[0])
     with open('test_filebench_with_vsfs', 'w') as result_file:
         result_file.write('Workload #Threads Throughput iteration\n')
     for workload in FILEBENCH_WORKLOADS:
