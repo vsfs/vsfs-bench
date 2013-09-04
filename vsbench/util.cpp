@@ -24,12 +24,14 @@
 #include <cstdlib>
 #include <string>
 #include <vector>
+#include "vobla/timer.h"
 #include "vsbench/util.h"
 
 DEFINE_uint64(batch_size, 1024, "Sets the batch size.");
 
 using std::string;
 using std::to_string;
+using vobla::Timer;
 
 namespace vsfs {
 namespace vsbench {
@@ -54,6 +56,7 @@ Status Util::insert_files(Driver* driver, const string& root_path,
                           const string& index_name, int start,
                           int num_files) {
   CHECK_NOTNULL(driver);
+  Timer timer;
   Status status;
   Driver::RecordVector records;
   string prefix = root_path + "/file-";
@@ -65,19 +68,25 @@ Status Util::insert_files(Driver* driver, const string& root_path,
 
     // TODO(lxu): use a flag to set the batch size.
     if (records.size() > FLAGS_batch_size) {
+      timer.start();
       status = driver->insert(records);
+      timer.stop();
       if (!status.ok()) {
         LOG(ERROR) << "Failed to insert: " << status.message();
         return status;
       }
+      LOG(INFO) << "INSERT LATENCY: " << timer.get_in_ms();
       records.clear();
     }
   }
+  timer.start();
   status = driver->insert(records);
+  timer.stop();
   if (!status.ok()) {
     LOG(ERROR) << "Failed to insert: " << status.message();
     return status;
   }
+  LOG(INFO) << "INSERT LATENCY: " << timer.get_in_ms();
   return Status::OK;
 }
 

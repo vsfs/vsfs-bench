@@ -58,7 +58,11 @@ Status VsfsDriver::create_index(const string &root, const string &name,
 }
 
 Status VsfsDriver::import(const vector<string> &files) {
-  // return client_->import(files);
+  ObjectId oid;
+  for (const auto& path : files) {
+    client_->create(path, 0600, 100, 100, &oid);
+  }
+  return Status::OK;
 }
 
 Status VsfsDriver::insert(const RecordVector& records) {

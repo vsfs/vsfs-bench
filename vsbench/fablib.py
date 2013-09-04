@@ -191,7 +191,7 @@ def mount_vsfs(base_dir, mount_dir, host, options=None):
     if not os.path.exists(mount_dir):
         os.makedirs(mount_dir)
     print(yellow("Trying to mount VSFS to %s." % mount_dir))
-    run('%s -o nonempty -b %s -H %s %s' %
+    run('%s -o nonempty -b %s -H %s -s object -o direct_io,big_writes %s' %
         (VSFS_MOUNT, base_dir, host, mount_dir))
 
 

@@ -32,7 +32,10 @@ def prepare_cluster(driver, num_shard):
     """
     print(yellow('Preparing cluster..'), file=sys.stderr)
     with settings(warn_only=True), lcd(os.path.join(SCRIPT_DIR, driver)):
-        local('fab start:%d' % num_shard)
+        if driver == 'vsfs':
+            local('fab start:%d,%d' % (num_shard, num_shard))
+        else:
+            local('fab start:%d' % num_shard)
 
 
 def destory_cluster(driver):

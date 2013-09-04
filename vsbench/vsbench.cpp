@@ -189,7 +189,6 @@ Status insert_records(const vector<string> &index_names) {
   return status;
 }
 
-
 /**
  * \brief Inserts records into the index with given name.
  * \param index_name the name of index.
@@ -355,6 +354,11 @@ void test_insert() {
   }
 };
 
+/// Test inserting in open loop.
+void test_open_insert() {
+  vector<int> indices;
+}
+
 void insert_record(const string &file, const string& name, const string &key) {
   unique_ptr<Driver> driver(Driver::create_driver(FLAGS_driver));
   Driver::RecordVector records;
@@ -506,6 +510,7 @@ int main(int argc, char* argv[]) {
     import();
   } else if (FLAGS_op == "insert") {
     test_insert();
+  } else if (FLAGS_op == "open_insert") {
   } else if (FLAGS_op == "record") {
     insert_record(argv[1], argv[2], argv[3]);
   } else if (FLAGS_op == "search") {

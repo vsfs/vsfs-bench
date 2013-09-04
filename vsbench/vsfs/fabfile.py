@@ -50,14 +50,15 @@ BASE_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, 'base_dir'))
 MNT_POINT = os.path.abspath(os.path.join(SCRIPT_DIR, 'mnt'))
 FUSE_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir,
                            'lib/vsfs/vsfs/fuse'))
-ITERATIONS = 3
+ITERATIONS = 1
 
-FILEBENCH_WORKLOADS = ['fileserver', 'oltp', 'webserver']
+FILEBENCH_WORKLOADS = ['fileserver', 'videoserver', 'webserver', 'singlestreamread',
+                       'singlestreamwrite', 'networkfs']
 TEST_DIR = MNT_POINT
-NUM_FILES = '100000'
+NUM_FILES = '1000'
 NUM_THREADS = '16'
-MEAN_FILE_SIZE = '4k'
-IO_SIZE = '1024'
+MEAN_FILE_SIZE = '8m'
+IO_SIZE = '8192'
 RUN_TIME = '60'
 
 FILEBENCH_CONF_FILE = os.path.abspath(os.path.join(SCRIPT_DIR,
@@ -80,12 +81,20 @@ def prepare_directories():
     fablib.create_dir(INDEXD_DIR)
 
 
-@parallel
-def start_master():
+@roles('head')
+def start_primary_master():
     """Starts the master daemon.
     """
     run('%s -primary -daemon -dir %s -log_dir %s' %
         (MASTERD, MASTERD_DIR, LOG_DIR))
+
+
+@parallel
+def start_secondary_master():
+    """Starts secondary master
+    """
+    run('%s -daemon -primary_host %s -dir %s' %
+        (MASTERD, env.head, MASTERD_DIR))
 
 
 @roles('head')
@@ -119,38 +128,35 @@ def stop_index_server():
 
 @task
 @roles('head')
-def start(nodes, **kwargs):
-    """Starts a VSFS cluster
+def start(masters, indexds, **kwargs):
+    """Starts a VSFS cluster (param: masters,indexds)
 
     @param nodes num of index nodes in the cluster.
+    @param
 
     Keyword parameters:
     @param clusters The default value is 1.
     """
-    num_nodes = int(nodes)
-    num_clusters = int(kwargs.get('clusters', 1))  # How many master node.
+    num_indexd = int(indexds)
+    num_masters = int(masters)  # How many master node.
 
-    total_nodes = num_nodes + num_clusters
+    total_nodes = num_indexd + num_masters - 1
     if total_nodes > len(env.nodes):
         raise RuntimeError("Total nodes is too much: %d" % total_nodes)
-    master_nodes = env.nodes[:num_clusters]
-    execute(prepare_directories, hosts=env.nodes)
+    secondary_master_nodes = env.workers[:(num_masters - 1)]
+    execute(prepare_directories, hosts=env.nodes[:total_nodes])
 
     if not os.path.exists(LOG_DIR):
         os.makedirs(LOG_DIR)
 
-    for master in master_nodes:
-        execute(start_master, host=master)
+    execute(start_primary_master)
+    run('sleep 1')
+    if num_masters > 1:
+        execute(start_secondary_master, hosts=secondary_master_nodes)
     run('sleep 5')
 
-    num_workers_per_cluster = num_nodes / num_clusters
-    for i in range(num_clusters):
-        start_node = num_clusters + i * num_workers_per_cluster
-        end_node = min(num_clusters + (i + 1) * num_workers_per_cluster,
-                       len(env.nodes))
-        master = master_nodes[i]
-        index_servers = env.workers[start_node:end_node]
-        execute(start_index_server, master=master, hosts=index_servers)
+    indexd_nodes = env.workers[(num_masters - 1):total_nodes]
+    execute(start_index_server, hosts=indexd_nodes)
 
 
 @task
@@ -251,8 +257,8 @@ def config_filebench(workload, num_files, num_threads, test_dir):
           RUN_TIME)
     filebench_conf = """load %s
 set $dir=%s
-set $nfiles=%d
-set $nthreads=%d
+set $nfiles=%s
+set $nthreads=%s
 set $meanfilesize=%s
 set $iosize=%s
 run %s
@@ -264,9 +270,7 @@ run %s
 
 
 def run_filebench():
-    if os.path.exists(os.path.join(TEST_DIR, 'bigfileset')):
-        run('rm -rf %s' % os.path.join(TEST_DIR, 'bigfileset'))
-    throughput = run("filebench -f %s | awk ' /Summary/ {print $7}'"
+    throughput = run("filebench -f %s | awk ' /Summary/ {print $0}'"
                      % (FILEBENCH_CONF_FILE))
     return throughput
 
@@ -280,21 +284,32 @@ def test_filebench_with_vsfs(**kwargs):
     @param num_threads
     @param test_dir
     """
-    num_files = int(kwargs.get('num_files', '100000'))
-    num_threads = int(kwargs.get('num_threads', '16'))
+    num_files = int(kwargs.get('num_files', NUM_FILES))
+    num_threads = int(kwargs.get('num_threads', NUM_THREADS))
     test_dir = kwargs.get('test_dir', MNT_POINT)
-    fablib.mount_vsfs(BASE_DIR, MNT_POINT, env.nodes[0])
-    with open('test_filebench_with_vsfs', 'w') as result_file:
+    with open('test_filebench_with_vsfs.txt', 'w') as result_file:
         result_file.write('Workload #Threads Throughput iteration\n')
+    stop()
+    with settings(warn_only=True):
+        fablib.umount_vsfs(MNT_POINT)
     for workload in FILEBENCH_WORKLOADS:
         config_filebench(workload, num_files, num_threads, test_dir)
         print("Running Filebench workload: %s with VSFS." % workload)
         for i in range(ITERATIONS):
+            start(2, 2)
+            run('rm -rf %s/*' % BASE_DIR)
+            run('sleep 5')
+            fablib.mount_vsfs(BASE_DIR, MNT_POINT, env.nodes[0])
+            run('sleep 5')
             throughput = run_filebench()
-            with open('test_filebench_with_vsfs', 'a') as result_file:
+            fablib.umount_vsfs(MNT_POINT)
+            stop()
+            run('sleep 1')
+            with open('test_filebench_with_vsfs.txt', 'a') as result_file:
                 result_file.write("%s  %s  %s  %s\n"
                                   % (workload, num_threads, throughput, i))
-    fablib.umount_vsfs(MNT_POINT)
+
+    run('rm -rf %s/*' % BASE_DIR)
 
 
 @task
@@ -345,7 +360,7 @@ def stress_index_server():
 
     execute(prepare_directories, hosts=[env.head])
     execute(prepare_directories, hosts=env.workers[:2])
-    start_master()
+    start_primary_master()
     run('sleep 5')
     execute(start_index_server, hosts=env.workers[:2])
     run('sleep 5')
