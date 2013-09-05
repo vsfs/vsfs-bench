@@ -131,6 +131,10 @@ def test_search(args):
                       num_files), shell=True)
         print(yellow('Building 2 indices, each %d records..' % num_files),
               file=sys.stderr)
+        check_output('%s -driver %s -%s_host %s -op create_indices '
+                     '-num_indices 100' %
+                     (VSBENCH, args.driver, args.driver, fabfile.env['head']),
+                     shell=True)
         check_output('srun -n 10 %s -driver %s -%s_host %s '
                      '-op insert -num_indices 10 -records_per_index %s' %
                      (VSBENCH, args.driver, args.driver, fabfile.env['head'],
