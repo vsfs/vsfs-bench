@@ -35,6 +35,8 @@ def base_dir(url):
     if url.endswith('.tar.bz') or url.endswith('tar.gz') \
             or url.endswith('.tar.xz'):
         url = url[:-7]
+    elif url.endswith('.tar.bz2'):
+        url = url[:-8]
     elif url.endswith('.tgz'):
         url = url[:-4]
     return os.path.basename(url)
