@@ -30,7 +30,7 @@ from vsbench.fablib import base_dir, download_tarball
 from vsbench import fablib
 import time
 
-SCRIPT_DIR = os.path.dirname(__file__)
+SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
 MAX_RETRY = 10
 URL = "http://cdn.mysql.com/Downloads/MySQL-Cluster-7.3/" + \
     "mysql-cluster-gpl-7.3.2-linux-glibc2.5-x86_64.tar.gz"
@@ -41,7 +41,7 @@ NODES_FILE = os.path.join(SCRIPT_DIR, '..', '..', 'nodes.txt')
 def load_config():
     """Initialize configurations.
     """
-    env.mysql_dir = base_dir(URL)
+    env.mysql_dir = os.path.join(SCRIPT_DIR, base_dir(URL))
     env.bin_dir = os.path.join(env.mysql_dir, 'bin')
     env.data_dir = os.path.abspath('mysql_data')
     env.config_dir = os.path.abspath('mysql_config')

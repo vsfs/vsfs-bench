@@ -5,12 +5,13 @@
 """Run MVD tests
 """
 
-from fabric.api import run, task, local, env, cd, parallel, execute, roles
+from fabric.api import run, task, local, env, cd, parallel, execute, roles, lcd
 import os
 import time
 
 NODE_FILE = os.path.join(os.path.dirname(__file__), '..', '..', 'nodes.txt')
 SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
+VSBENCH = os.path.join(SCRIPT_DIR, '../../bin/vsbench')
 
 
 def load_config():
@@ -58,6 +59,35 @@ def run_mvd(driver=None):
 
     with cd(SCRIPT_DIR):
         run(cmd)
+
+
+@parallel
+def perform_file_index(driver):
+    index_cmd = '%s -op insert -driver %s -%s_host %s -num_indices 10 ' \
+                '-records_per_index 10000' % \
+                (VSBENCH, driver, driver, env.nodes[0])
+    print(index_cmd)
+    run(index_cmd)
+
+
+@task
+def run_index(driver):
+    """Run indexing process. Param: (driver)
+    """
+    driver_dir = os.path.join(SCRIPT_DIR, '../../vsbench/%s' % driver)
+    with lcd(driver_dir):
+        local('fab stop')
+        local('fab start:4')
+
+    local('sleep 2')
+    local('%s -op create_indices -driver %s -%s_host %s -num_indices 10 ' %
+          (VSBENCH, driver, driver, env.nodes[0]))
+    start = time.time()
+    execute(perform_file_index, driver, hosts=env.nodes[4:20])
+    print 'Execution Time: ', time.time() - start
+
+    with lcd(driver_dir):
+        local('fab stop')
 
 
 @task

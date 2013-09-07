@@ -75,7 +75,7 @@ Status Util::insert_files(Driver* driver, const string& root_path,
         LOG(ERROR) << "Failed to insert: " << status.message();
         return status;
       }
-      LOG(INFO) << "INSERT LATENCY: " << timer.get_in_ms();
+      // LOG(INFO) << "INSERT LATENCY: " << timer.get_in_ms();
       records.clear();
     }
   }
@@ -86,7 +86,7 @@ Status Util::insert_files(Driver* driver, const string& root_path,
     LOG(ERROR) << "Failed to insert: " << status.message();
     return status;
   }
-  LOG(INFO) << "INSERT LATENCY: " << timer.get_in_ms();
+  // LOG(INFO) << "INSERT LATENCY: " << timer.get_in_ms();
   return Status::OK;
 }
 

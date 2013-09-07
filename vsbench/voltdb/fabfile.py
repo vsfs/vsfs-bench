@@ -18,7 +18,7 @@
 """
 
 from __future__ import print_function, division
-from fabric.api import task, env, execute, local, roles, run
+from fabric.api import task, env, execute, local, roles, run, settings
 from xml.dom import minidom
 import os
 import sys
@@ -107,7 +107,8 @@ def start(num_servers):
 def stop():
     """Stops the VoltDB cluster.
     """
-    run('%(bin_dir)s/voltadmin shutdown --host=%(head)s ' % env)
+    with settings(warn_only=True):
+        run('%(bin_dir)s/voltadmin shutdown --host=%(head)s ' % env)
 
 
 @task
