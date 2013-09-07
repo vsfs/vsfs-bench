@@ -66,7 +66,7 @@ def run_with_index(driver):
     """
     #local('fab -f ../../%s/fabfile.py stop' % driver)
     #local('fab -f ../../%s/fabfile.py start:4' % driver)
-    local('../../vsbench -driver %s -op create_indices -%s_host %s'
+    local('../../bin/vsbench -driver %s -op create_indices -%s_host %s'
           '  -num_indices=1'
           % (driver, driver, env.nodes[0]))
     local('ls abc > file_list.txt')

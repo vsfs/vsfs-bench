@@ -39,7 +39,7 @@ def extract_features(args):
                 if len(fields) < 5 or not fields[4]:
                     continue
                 name = fields[3]
-                value = fields[4]
+                value = float(fields[4])
                 max_value[name] = max(max_value[name], value)
             if args.threshold:
                 if max_value['Writer_5_runtime'] >= args.threshold:

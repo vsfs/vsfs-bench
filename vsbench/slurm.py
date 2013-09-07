@@ -219,6 +219,10 @@ if __name__ == '__main__':
     parser_index.add_argument(
         '-t', '--total', type=int, default=10**7, metavar='NUM',
         help='Total number of index records (default: %(default)d).')
+    parser_index.add_argument(
+        '-i', '--index', type=int, default=63, metavar='NUM',
+        help='Number of indices')
+    parser_index.add_argument('--id')
     parser_index.set_defaults(func=test_index)
 
     parser_search = subparsers.add_parser(

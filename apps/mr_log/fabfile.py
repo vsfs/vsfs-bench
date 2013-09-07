@@ -123,7 +123,7 @@ def start():
     """Starts a VSFS cluster and Hadoop cluster.
     """
     with lcd(VSFS_DIR):
-        local('fab start:4')
+        local('fab start:2,4')
     with lcd(HADOOP_DIR):
         local('fab start_hive:16')
 
@@ -177,7 +177,7 @@ def _parse_tritonsort_log(args):
             fields = line.split()
             timestamp = float(fields[0])
             # One minute per file
-            if not last_timestamp or last_timestamp < timestamp - 10:
+            if not last_timestamp or last_timestamp < timestamp - 1:
                 last_timestamp = timestamp
                 if outcsv:
                     outcsv.close()
@@ -265,6 +265,7 @@ CREATE INDEX idx ON TABLE log(event, value_name, value)
 AS 'org.apache.hadoop.hive.ql.index.compact.CompactIndexHandler'
 WITH DEFERRED REBUILD;
 ALTER INDEX idx ON log REBUILD;
+set hive.optimize.autoindex=true;
 SHOW INDEX ON log;
 """)
 

@@ -31,7 +31,7 @@ import time
 sys.path.append('..')
 from fablib import base_dir, download_tarball, run_background
 
-SCRIPT_DIR = os.path.dirname(__file__)
+SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
 NODES_FILE = os.path.join(SCRIPT_DIR, '..', '..', 'nodes.txt')
 MONGO_VERSION = '2.5.1'
 URL = 'http://fastdl.mongodb.org/linux/' \
@@ -45,7 +45,7 @@ MONGOS_PORT = 27018
 def load_config():
     """Load configurations and initialize environment.
     """
-    env.mongo_dir = base_dir(URL)
+    env.mongo_dir = os.path.join(SCRIPT_DIR, base_dir(URL))
     env.bin_dir = os.path.join(env.mongo_dir, 'bin')
     env.config_dir = os.path.abspath('testdata')
     env.data_dir = os.path.abspath('testdata/data')
@@ -65,7 +65,7 @@ load_config()
 def start_config_server():
     """Starts MongoDB config server.
     """
-    run_background('%(mongo_bin)s --configsvr --port 27019 ' \
+    run_background('%(mongo_bin)s --configsvr ' \
                    '--dbpath %(config_dir)s' % env)
     run('sleep 2')
     #run('%(bin_dir)s/mongos --port --configdb %(head)s' % env)

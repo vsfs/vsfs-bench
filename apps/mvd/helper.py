@@ -13,6 +13,8 @@ import multiprocessing
 
 ZIPF_FACTOR = 1.5
 
+SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
+VSBENCH = os.path.abspath(SCRIPT_DIR + '/../../bin/vsbench')
 MVD = os.path.join(os.path.dirname(__file__), 'mvd')
 
 def call_mvd(args, input_file, key):
@@ -66,6 +68,12 @@ def create_directory(args):
                 fobj.write(random_buf)
 
 
+def index_files(args):
+    """Indexing file records into file search engines.
+    """
+    pass
+
+
 def main():
     """MVD helper
     """
@@ -73,7 +81,7 @@ def main():
     subparsers = parser.add_subparsers(help='sub-command help')
 
     create_parser = subparsers.add_parser('create', help='create files.')
-    create_parser.add_argument('-s', '--subfiles', type=int, default=100000,
+    create_parser.add_argument('-s', '--subfiles', type=int, default=10000,
                                metavar='NUM',
                                help='set number of files in a directory')
     create_parser.add_argument('-d', '--dist', choices=['zipf'],
@@ -103,6 +111,9 @@ def main():
                             help='set the driver to insert records.')
     mvd_parser.add_argument('--host', help='set the host of driver.')
     mvd_parser.set_defaults(func=run_mvd)
+
+    index_parser = subparsers.add_parser('index', help='index files.')
+    index_parser.set_defaults(func=index_files)
 
     args = parser.parse_args()
     args.func(args)
