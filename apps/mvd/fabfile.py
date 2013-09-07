@@ -62,10 +62,11 @@ def run_mvd(driver=None):
 
 
 @parallel
-def perform_file_index(driver):
-    index_cmd = '%s -op insert -driver %s -%s_host %s -num_indices 10 ' \
-                '-records_per_index 10000' % \
-                (VSBENCH, driver, driver, env.nodes[0])
+def perform_file_index(driver, num_indices):
+    index_cmd = '%s -op insert -driver %s -%s_host %s -num_indices %d ' \
+                '-records_per_index %d' % \
+                (VSBENCH, driver, driver, env.nodes[0], num_indices,
+                 10000 / 16)
     print(index_cmd)
     run(index_cmd)
 
@@ -74,20 +75,29 @@ def perform_file_index(driver):
 def run_index(driver):
     """Run indexing process. Param: (driver)
     """
-    driver_dir = os.path.join(SCRIPT_DIR, '../../vsbench/%s' % driver)
-    with lcd(driver_dir):
-        local('fab stop')
-        local('fab start:4')
+    if driver == 'hbase':
+        driver_dir = os.path.join(SCRIPT_DIR, '../../vsbench/hadoop')
+        with lcd(driver_dir):
+            local('fab stop_hbase')
+            local('fab start_hbase:4')
+    else:
+        driver_dir = os.path.join(SCRIPT_DIR, '../../vsbench/%s' % driver)
+        with lcd(driver_dir):
+            local('fab stop')
+            local('fab start:4')
 
     local('sleep 2')
-    local('%s -op create_indices -driver %s -%s_host %s -num_indices 10 ' %
+    local('%s -op create_indices -driver %s -%s_host %s -num_indices 1 ' %
           (VSBENCH, driver, driver, env.nodes[0]))
     start = time.time()
-    execute(perform_file_index, driver, hosts=env.nodes[4:20])
+    execute(perform_file_index, driver, 10, hosts=env.nodes[4:20])
     print 'Execution Time: ', time.time() - start
 
     with lcd(driver_dir):
-        local('fab stop')
+        if driver == 'hbase':
+            local('fab stop_hbase')
+        else:
+            local('fab stop')
 
 
 @task
