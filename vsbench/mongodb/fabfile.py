@@ -132,6 +132,7 @@ def start(num_shard):
         retry = 10
         while retry:
             try:
+                print(yellow('Adding %s:27017 to shared' % shard))
                 admin.command('addshard', '%s:27017' % shard)
                 break
             except pymongo.errors.OperationFailure:
@@ -144,10 +145,11 @@ def start(num_shard):
     collection = db['test']
     collection.create_index([("file", pymongo.ASCENDING)])
     collection.ensure_index("file")
-    for i in range(0, 61):
-        collection.create_index([("index" + str(i), pymongo.ASCENDING)])
     admin.command('enableSharding', 'vsfs')
     admin.command('shardCollection', 'vsfs.test', key={'file': 'hashed'})
+    for i in range(0, 61):
+        collection.create_index([("index" + str(i), pymongo.ASCENDING)])
+
 
 
 @roles('head')

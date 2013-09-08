@@ -56,8 +56,6 @@ Status MongoDBDriver::connect() {
 
 Status MongoDBDriver::create_index(const string &path, const string &name,
                                    int index_type, int key_type) {
-  auto p = BSON(name << 1);
-  string collection = kTestCollection;
   return Status::OK;
 }
 
@@ -106,6 +104,7 @@ Status MongoDBDriver::search(const ComplexQuery& query,
   auto cursor = db_conn_.query(kTestCollection, b.obj());
   while (cursor->more()) {
     auto result = cursor->next();
+    VLOG(1) << "File: " << result.getStringField("file");
     results->push_back(result.getStringField("file"));
   }
   return Status::OK;

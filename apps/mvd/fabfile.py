@@ -63,10 +63,13 @@ def run_mvd(driver=None):
 
 @parallel
 def perform_file_index(driver, num_indices):
+    task_id = env.all_hosts.index(env.host)
+    print(env.host, env.all_hosts, task_id)
+    ntasks = len(env.all_hosts)
     index_cmd = '%s -op insert -driver %s -%s_host %s -num_indices %d ' \
-                '-records_per_index %d' % \
+                '-records_per_index %d -ntasks %d -taskid %d' % \
                 (VSBENCH, driver, driver, env.nodes[0], num_indices,
-                 10000 / 16)
+                 10000, ntasks, task_id)
     print(index_cmd)
     run(index_cmd)
 
@@ -86,12 +89,23 @@ def run_index(driver):
             local('fab stop')
             local('fab start:4')
 
-    local('sleep 2')
-    local('%s -op create_indices -driver %s -%s_host %s -num_indices 1 ' %
-          (VSBENCH, driver, driver, env.nodes[0]))
+    local('sleep 5')
+    run('%s -op import -driver %s -%s_host %s -records_per_index 10000' %
+        (VSBENCH, driver, driver, env.nodes[0]))
+
+    if driver == 'voltdb' or driver == 'mysql':
+        execute(perform_file_index, driver, 500 / 16, hosts=env.nodes[4:20])
+    num_indices = 1
+    #local('%s -op create_indices -driver %s -%s_host %s -num_indices %d ' %
+    #      (VSBENCH, driver, driver, env.nodes[0], num_indices))
     start = time.time()
-    execute(perform_file_index, driver, 10, hosts=env.nodes[4:20])
+    execute(perform_file_index, driver, num_indices, hosts=env.nodes[4:20])
     print 'Execution Time: ', time.time() - start
+
+    start = time.time()
+    local('%s -op search -driver %s -%s_host %s -query "/foo/bar/?index0>5000&index0<6000"' %
+          (VSBENCH, driver, driver, env.nodes[0]))
+    print 'Search Time: ', time.time() - start
 
     with lcd(driver_dir):
         if driver == 'hbase':

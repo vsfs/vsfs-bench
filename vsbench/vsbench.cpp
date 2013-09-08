@@ -52,6 +52,8 @@ DEFINE_bool(stdin, false, "Sets to use stdin to feed records.");
 DEFINE_bool(print, false, "Sets true to print out results.");
 DEFINE_bool(mpi, false, "Uses MPI barrier to sync perf tests.");
 DEFINE_string(query, "", "Provide the query for search operation.");
+DEFINE_int32(ntasks, 0, "Sets the number of tasks in total.");
+DEFINE_int32(taskid, 0, "Sets the current task id.");
 
 DECLARE_uint64(batch_size);
 
@@ -79,6 +81,8 @@ int get_total_clients() {
     int mpi_size;
     MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
     return mpi_size;
+  } else if (FLAGS_ntasks > 0) {
+    return FLAGS_ntasks;
   } else {
     char* env = getenv("SLURM_NTASKS");
     if (!env) {
@@ -93,6 +97,8 @@ int get_rank() {
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     return rank;
+  } else if (FLAGS_ntasks > 0) {
+    return FLAGS_taskid;
   } else {
     char* env = getenv("SLURM_PROCID");
     if (!env) {
