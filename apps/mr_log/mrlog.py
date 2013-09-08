@@ -83,6 +83,8 @@ def index_features(args):
 
 
 def import_namespace(args):
+    if not os.path.exists(args.tardir):
+        os.makedirs(args.tardir)
     for root, dirs, files in os.walk(args.srcdir):
         for filename in files:
             path = os.path.join(root, filename)
