@@ -52,9 +52,9 @@ Status Util::create_index(Driver* driver, const string &index_path,
   return status;
 }
 
-Status Util::insert_files(Driver* driver, const string& root_path,
-                          const string& index_name, int start,
-                          int num_files) {
+Status Util::insert_records(Driver* driver, const string& root_path,
+                            const string& index_name, int start,
+                            int num_files, vector<double>* latencies) {
   CHECK_NOTNULL(driver);
   Timer timer;
   Status status;
@@ -66,7 +66,6 @@ Status Util::insert_files(Driver* driver, const string& root_path,
     uint64_t key = static_cast<uint64_t>(i);
     records.emplace_back(filename, index_name, key);
 
-    // TODO(lxu): use a flag to set the batch size.
     if (records.size() > FLAGS_batch_size) {
       timer.start();
       status = driver->insert(records);
@@ -75,7 +74,9 @@ Status Util::insert_files(Driver* driver, const string& root_path,
         LOG(ERROR) << "Failed to insert: " << status.message();
         return status;
       }
-      // LOG(INFO) << "INSERT LATENCY: " << timer.get_in_ms();
+      if (latencies) {
+        latencies->push_back(timer.get_in_ms());
+      }
       records.clear();
     }
   }
@@ -86,13 +87,17 @@ Status Util::insert_files(Driver* driver, const string& root_path,
     LOG(ERROR) << "Failed to insert: " << status.message();
     return status;
   }
+  if (latencies) {
+    latencies->push_back(timer.get_in_ms());
+  }
   // LOG(INFO) << "INSERT LATENCY: " << timer.get_in_ms();
   return Status::OK;
 }
 
-Status Util::insert_files(Driver* driver, const string& root_path,
-                          const string& index_name, int num_files) {
-  return insert_files(driver, root_path, index_name, 0, num_files);
+Status Util::insert_records(Driver* driver, const string& root_path,
+                            const string& index_name, int num_files,
+                            vector<double>* latencies) {
+  return insert_records(driver, root_path, index_name, 0, num_files, latencies);
 }
 
 }  // namespace vsbench

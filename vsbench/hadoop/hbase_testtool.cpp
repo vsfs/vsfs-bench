@@ -37,7 +37,7 @@ void create_index(HbaseDriver *hbase, const string &root, const string &name,
                   int num_files) {
   CHECK_NOTNULL(hbase);
   hbase->create_index(root, name, IndexInfo::BTREE, UINT64);
-  Util::insert_files(hbase, root, name, num_files);
+  Util::insert_records(hbase, root, name, num_files, nullptr);
 }
 
 void test_search_tables() {

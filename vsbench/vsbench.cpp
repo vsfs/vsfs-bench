@@ -46,6 +46,7 @@ DEFINE_string(indices, "", "Sets the indices to operate on, e.g., "
 DEFINE_int32(num_indices, 64, "Sets the total number of indices.");
 DEFINE_int64(records_per_index, 100000, "Sets the number of records in each "
              " index.");
+DEFINE_bool(latency, false, "Sets to measure the latency.");
 DEFINE_string(path, "/foo/bar", "Sets the path to create indices.");
 DEFINE_string(op, "", "Sets the operation to performed.");
 DEFINE_bool(stdin, false, "Sets to use stdin to feed records.");
@@ -171,7 +172,7 @@ Status create_indices() {
  * \brief Inserts records into the index with given name.
  * \param index_name the name of index.
  */
-Status insert_records(const vector<string> &index_names) {
+Status insert_records(const vector<string>& index_names) {
   unique_ptr<Driver> driver(Driver::create_driver(FLAGS_driver));
   CHECK_NOTNULL(driver.get());
 
@@ -184,12 +185,23 @@ Status insert_records(const vector<string> &index_names) {
     return Status(-1, error_message);
   }
 
+  unique_ptr<vector<double>> latencies;
+  if (FLAGS_latency) {
+    latencies.reset(new vector<double>());
+  }
+
   for (const auto& index_name : index_names) {
     LOG(ERROR) << "Insert record for: " << index_name;
-    status = Util::insert_files(driver.get(), FLAGS_path, index_name,
-                                FLAGS_records_per_index);
+    status = Util::insert_records(driver.get(), FLAGS_path, index_name,
+                                  FLAGS_records_per_index, latencies.get());
     if (!status.ok()) {
       LOG(ERROR) << "Failed to insert file: " << status.message();
+    }
+  }
+
+  if (latencies.get()) {
+    for (auto lat : *latencies) {
+      printf("LAT: %f\n", lat);
     }
   }
   return status;
@@ -200,24 +212,9 @@ Status insert_records(const vector<string> &index_names) {
  * \param index_name the name of index.
  */
 Status insert_records(const string &index_name) {
-  unique_ptr<Driver> driver(Driver::create_driver(FLAGS_driver));
-  CHECK_NOTNULL(driver.get());
-
-  VLOG(1) << "Connect to insert records for " << index_name;
-  Status status = driver->connect();
-  if (!status.ok()) {
-    string error_message("Failed to connect: ");
-    error_message += status.message();
-    LOG(ERROR) << error_message;
-    return Status(-1, error_message);
-  }
-  VLOG(1) << "Insert record for: " << index_name;
-  status = Util::insert_files(driver.get(), FLAGS_path, index_name,
-                              FLAGS_records_per_index);
-  if (!status.ok()) {
-    LOG(ERROR) << "Failed to insert file: " << status.message();
-  }
-  return status;
+  vector<string> names;
+  names.push_back(index_name);
+  return insert_records(names);
 }
 
 void insert_records_in_thread_pool(const vector<int>& indices) {
@@ -290,8 +287,8 @@ void populate() {
     for (auto idx : indices) {
       string index_name = "index" + lexical_cast<string>(idx);
       VLOG(1) << "Connect to populate records for " << index_name;
-      status = Util::insert_files(driver.get(), FLAGS_path, index_name,
-                                  start, records_per_client);
+      status = Util::insert_records(driver.get(), FLAGS_path, index_name,
+                                    start, records_per_client, nullptr);
       if (!status.ok()) {
         LOG(ERROR) << "Failed to populate index: " << status.message();
       }

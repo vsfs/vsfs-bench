@@ -257,14 +257,18 @@ ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
 LOCATION 'hdfs://%(head)s/csv';
 
 SELECT * FROM log LIMIT 3;
-SELECT * FROM log LIMIT 3;
+SELECT * FROM log_noidx LIMIT 3;
 """ % hadoop.env)
         if do_create_index:
             sqlfile.write("""
-CREATE INDEX idx ON TABLE log(event, value_name, value)
+CREATE INDEX idx ON TABLE log(value_name)
 AS 'org.apache.hadoop.hive.ql.index.compact.CompactIndexHandler'
 WITH DEFERRED REBUILD;
 ALTER INDEX idx ON log REBUILD;
+CREATE INDEX idx_value ON TABLE log(value)
+AS 'org.apache.hadoop.hive.ql.index.compact.CompactIndexHandler'
+WITH DEFERRED REBUILD;
+ALTER INDEX idx_value ON log REBUILD;
 set hive.optimize.autoindex=true;
 SHOW INDEX ON log;
 """)
@@ -275,16 +279,16 @@ SHOW INDEX ON log;
 
 @task
 @roles('head')
-def test_query_hive(threshold=100000):
+def test_query_hive(threshold=1000000):
     threshold = int(threshold)
-    sql_template = """SELECT hour, count(hour) AS hrcount FROM
-(SELECT round(time / 60) AS hour FROM %s WHERE value_name = 'Writer_5_runtime'
-and value > %d) t2 GROUP BY hour ORDER BY hrcount DESC LIMIT 3;
+    sql_template = """EXPLAIN SELECT hour, count(hour) AS hrcount FROM
+(SELECT round(time / 60) AS hour FROM %s WHERE
+value > %d) t2 GROUP BY hour ORDER BY hrcount DESC LIMIT 3;
 """
     with cd(SCRIPT_DIR):
         hadoop.run_hive('-e "%s"' % (sql_template % ('log', threshold)))
-        hadoop.run_hive('-e "%s"' % (sql_template % ('log_noidx', threshold)))
-
+        #hadoop.run_hive('-e "%s"' % (sql_template % ('log_noidx', threshold)))
+    return
     # Hive on VSFS
     with settings(warn_only=True):
         result = run("%(hadoop_bin)s/hadoop fs -test -d "

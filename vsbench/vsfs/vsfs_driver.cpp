@@ -63,7 +63,6 @@ Status VsfsDriver::import(const vector<string> &files) {
   client_->mkdir("/foo/bar", 0777, 100, 100);
   ObjectId oid;
   for (const auto& path : files) {
-    LOG(INFO) << "Importing " << path;
     client_->create(path, 0600, 100, 100, &oid);
   }
   return Status::OK;

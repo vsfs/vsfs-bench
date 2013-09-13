@@ -18,10 +18,12 @@
 #define VSBENCH_UTIL_H_
 
 #include <string>
+#include <vector>
 #include "vobla/status.h"
 #include "vsbench/driver.h"
 
 using std::string;
+using std::vector;
 
 namespace vsfs {
 namespace vsbench {
@@ -35,12 +37,14 @@ class Util {
                              const string &index_name, int index_type,
                              int key_type);
 
-  static Status insert_files(Driver* driver, const string &root_path,
-                             const string &index_name, int num_files);
+  static Status insert_records(Driver* driver, const string &root_path,
+                               const string &index_name, int num_files,
+                               vector<double>* latencies);
 
-  static Status insert_files(Driver* driver, const string &root_path,
-                             const string &index_name, int start,
-                             int num_files);
+  static Status insert_records(Driver* driver, const string &root_path,
+                               const string &index_name, int start,
+                               int num_files,
+                               vector<double>* latencies);
 };
 
 }  // namespace vsbench
