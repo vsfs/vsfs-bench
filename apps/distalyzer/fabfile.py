@@ -155,7 +155,7 @@ def get_hbase_high_feature_counts():
         a = data[data[:, -2] > 150]
         max_value = np.max(data[:, -2])
         count = len(a)
-        results.append((infile, max_value, count))
+        results.append((fullpath, max_value, count))
     return results
 
 
@@ -173,6 +173,23 @@ def prepare_hbase_traces():
     features = get_hbase_high_feature_counts()
     for f in features:
         print(f)
+
+    hbase_input = os.path.join(env['testdata'], 'hbase')
+    os.makedirs(hbase_input)
+    local('cp %s/requests-*weight* %s' % (HBASE_DIR, hbase_input))
+
+    # Filter without false negative
+    file_list = [ f[0] for f in features[:3] ] + [ f[0] for f in features if f[2] > 0]
+    for trace in file_list:
+        local('cat %s >> %s/nofalse.txt' % (trace, hbase_input))
+
+    file_list = [ f[0] for f in features[:3] ] + [features[-1][0]]
+    for trace in file_list:
+        local('cat %s >> %s/large_false.txt' % (trace, hbase_input))
+
+    file_list = [ f[0] for f in features[:3] ] + [features[-2][0]]
+    for trace in file_list:
+        local('cat %s >> %s/small_false.txt' % (trace, hbase_input))
 
 
 @task
