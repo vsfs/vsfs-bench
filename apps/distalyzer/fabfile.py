@@ -69,6 +69,7 @@ def download():
         local('python setup.py build')
         local('ln -s build/lib.linux-x86_64-2.7/ParseLogFiles.so')
 
+
 def parse_tritonsort_logfile(args):
     """Parses the tritonsort log file and split it.
     """
@@ -90,6 +91,7 @@ def parse_tritonsort_logfile(args):
             outfile.write(line + '\n')
         if outfile:
             outfile.close()
+
 
 @task
 def prepare_traces():
@@ -149,9 +151,9 @@ def get_hbase_high_feature_counts():
     for infile in sorted(os.listdir(split_dir)):
         fullpath = os.path.join(split_dir, infile)
         # print(fullpath)
-        data = np.loadtxt(fullpath, skiprows=1, usecols=range(1,20))
-        a = data[data[:,-2]>150]
-        max_value = np.max(data[:,-2])
+        data = np.loadtxt(fullpath, skiprows=1, usecols=range(1, 20))
+        a = data[data[:, -2] > 150]
+        max_value = np.max(data[:, -2])
         count = len(a)
         results.append((infile, max_value, count))
     return results
@@ -172,7 +174,8 @@ def prepare_hbase_traces():
     for f in features:
         print(f)
 
+
 @task
 def test_speedup():
-    run_distalyzer_hbase('wloadd_run11_hbase90-seeklog-Xmx2G-treemap/' \
+    run_distalyzer_hbase('wloadd_run11_hbase90-seeklog-Xmx2G-treemap/'
                          'requests-mod_processed_weight1.004631674')
