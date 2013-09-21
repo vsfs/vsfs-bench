@@ -16,6 +16,7 @@
 
 from __future__ import print_function
 from fabric.api import env, task, local, lcd
+from fabric.colors import green
 import gzip
 import multiprocessing as mp
 import numpy as np
@@ -42,6 +43,8 @@ DISTALYZER_EXEC = os.path.join(SCRIPT_DIR, 'distalyzer/Distalyzer.py')
 HBASE_EXEC = os.path.join(SCRIPT_DIR,
                           'distalyzer/parsers/HBaseExecDistalyzer.py')
 HBASE_DIR = os.path.join(SCRIPT_DIR, fablib.base_dir(HBASE_TRACE_URL))
+DEPENDENCY_NETWORK_EXEC = os.path.join(SCRIPT_DIR,
+                                       'distalyzer/DependencyNetwork.py')
 
 
 @task
@@ -142,6 +145,12 @@ def run_distalyzer_hbase(infile):
     cmd = '%s -i %s -o %s/hbase- -t 8' % (HBASE_EXEC, infile, output_dir)
     local(cmd)
 
+    cmd = '%s -i %s/hbase-events_2.txt ' \
+          ' -t %s/hbase-t_events.txt -o %s/hbase-dep_events_2 ' \
+          '--perf_var HBaseClient.post_get' % \
+          (DEPENDENCY_NETWORK_EXEC, output_dir, output_dir, output_dir)
+    local(cmd)
+
 
 def get_hbase_high_feature_counts():
     """Returns [(file, max, count), ...]
@@ -191,8 +200,70 @@ def prepare_hbase_traces():
     for trace in file_list:
         local('cat %s >> %s/small_false.txt' % (trace, hbase_input))
 
+    for trace in [ f[0] for f in features[:2] ]:
+        local('cat %s >> %s/half_false.txt' % (trace, hbase_input))
+    local('tail -n 1500 %s >> %s/half_false.txt' % (features[-1][0], hbase_input))
 
 @task
 def test_speedup():
-    run_distalyzer_hbase('wloadd_run11_hbase90-seeklog-Xmx2G-treemap/'
-                         'requests-mod_processed_weight1.004631674')
+    hbase_input = os.path.join(env['testdata'], 'hbase')
+#    print(green('Original Test'))
+#    run_distalyzer_hbase('%s/requests-*weight*' % hbase_input)
+    #print(green('NO FALSE POSITIVE'))
+    #run_distalyzer_hbase('%s/nofalse.txt' % hbase_input)
+    #print(green('LARGE FALSE POSITIVE'))
+    #run_distalyzer_hbase('%s/large_false.txt' % hbase_input)
+    #print(green('SMALL FALSE POSITIVE'))
+    #run_distalyzer_hbase('%s/small_false.txt' % hbase_input)
+    print(green('HALF FALSE POSITIVE'))
+    run_distalyzer_hbase('%s/half_false.txt' % hbase_input)
+
+
+@task
+def analyze_hbase_correctness():
+    output_base = os.path.join(TESTDATA_DIR, 'output')
+    all_graphes = {}
+    for outdir in sorted(os.listdir(output_base)):
+        dotfile = os.path.join(
+            output_base, outdir,
+            'hbase-dep_events_2Perf-HBaseClient.post_get-1.dot')
+        content = None
+        with open(dotfile) as fobj:
+            content = fobj.readlines()
+        edges = []
+        for line in content:
+            if '->' in line:
+                edge = line.split()[0]
+                two_ends = edge.split('->')
+                two_ends = [ e.split('_')[2] for e in two_ends ]
+                edges.append(tuple(two_ends))
+        all_graphes[outdir] = edges
+
+    vertex_original = set()
+    for edge in all_graphes['original']:
+        vertex_original.add(edge[0])
+        vertex_original.add(edge[1])
+
+    print(vertex_original)
+    for k in all_graphes:
+        if k == 'original':
+            continue
+        edges = all_graphes[k]
+        vertex = set()
+        total_diffs = 0
+        for edge in edges:
+            vertex.add(edge[0])
+            vertex.add(edge[1])
+            if not edge in all_graphes['original']:
+                print('%s is not in original' % str(edge))
+                #total_diffs += 1
+        for edge in all_graphes['original']:
+            if not edge in edges:
+                print('%s is not in %s' % (str(edge), k))
+                total_diffs += 1
+        for ver in vertex_original:
+            if not ver in vertex:
+                total_diffs += 1
+
+        print('Total diffs: %0.2f for %s' %
+              (1.0 * total_diffs / (len(all_graphes['original']) + len(vertex_original)), k))
