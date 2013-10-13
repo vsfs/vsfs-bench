@@ -31,6 +31,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import fablib
 import time
 import pwd
+import vsfs_ec2
 
 
 SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -384,19 +385,9 @@ EC2_SECURITY_GROUPS = ['quick-start-1']
 def ec2_create_instance():
     """Creates an EC2 instance for VSFS
     """
-    print(yellow('Creating EC2 instance'))
-    conn = boto.ec2.connect_to_region(EC2_REGION)
-    conn.run_instances(EC2_AMI,
-                       instance_type='m1.small',
-                       security_groups=EC2_SECURITY_GROUPS,
-                       key_name='eddy')
-
-    reservation = conn.get_all_instances()
-    if not reservation:
-        print(red('No instance is running.'))
-        return
-    instance = reservation[0].instances[0]
-    instance.add_tag("Name", "VSFS AMI")
+    ec2 = vsfs_ec2.VsfsEC2()
+    #ec2.create_image()
+    ec2.provision_image()
 
 
 @task
@@ -407,16 +398,11 @@ def ec2_terminate_instance():
 
 
 def ec2_install_packages():
-    packages = ['g++', 'autoconf-archive', 'libleveldb-dev', 'libsnappy-dev',
-                'libevent-dev', 'libfuse-dev', 'libattr1-dev',
-                'libboost1.53-dev', 'libboost-filesystem1.53-dev',
-                'libboost-system1.53-dev', 'libgflags-dev',
-                'libgoogle-glog-dev', 'git-core']
+    INSTALL_SCRIPT = 'wget https://raw.github.com/vsfs/vsfs-devtools/master' + \
+                     '/install-devbox.sh | sudo sh'
     print(yellow('Installing dependancies...'))
     with settings(user='ubuntu', key_filename='~/eddy.pem'):
-        sudo('apt-get -qq update')
-        sudo('apt-get -y -qq dist-upgrade')
-        sudo('apt-get -y -qq install %s' % ' '.join(packages))
+        sudo(INSTALL_SCRIPT)
 
 
 @task
