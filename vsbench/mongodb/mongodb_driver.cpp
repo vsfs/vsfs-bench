@@ -18,8 +18,9 @@
 #include <glog/logging.h>
 #include <string>
 #include <vector>
-#include "vsfs/common/complex_query.h"
+#include "mongo/client/dbclient.h"
 #include "vsbench/mongodb/mongodb_driver.h"
+#include "vsfs/common/complex_query.h"
 
 using mongo::BSONObjBuilder;
 using mongo::BSONObj;
@@ -33,6 +34,10 @@ const char* kTestCollection = "vsfs.test";
 namespace vsfs {
 namespace vsbench {
 
+MongoDBDriver::MongoDBDriver() {
+  db_conn_.reset(new mongo::DBClientConnection);
+}
+
 Status MongoDBDriver::init() {
   auto status = connect();
   if (!status.ok()) {
@@ -44,7 +49,7 @@ Status MongoDBDriver::init() {
 
 Status MongoDBDriver::connect() {
   try {
-    db_conn_.connect(FLAGS_mongodb_host + ":"
+    db_conn_->connect(FLAGS_mongodb_host + ":"
                      + std::to_string(FLAGS_mongodb_port));
   } catch (const mongo::DBException &e) {  // NOLINT
     LOG(ERROR) << "Failed to connect MongoDB " << FLAGS_mongodb_host
@@ -60,19 +65,19 @@ Status MongoDBDriver::create_index(const string &path, const string &name,
 }
 
 Status MongoDBDriver::import(const vector<string>& files) {
-  db_conn_.setWriteConcern(mongo::W_NORMAL);
+  db_conn_->setWriteConcern(mongo::W_NORMAL);
   vector<BSONObj> buffer;
   for (const auto& file : files) {
     auto bson_obj = BSON("file" << file);
     buffer.push_back(bson_obj);
     // TODO(lxu): use a FLAGS to customize the buffer size.
     if (buffer.size() % 1024 == 0) {
-      db_conn_.insert(kTestCollection, buffer);
+      db_conn_->insert(kTestCollection, buffer);
       buffer.clear();
     }
   }
   if (!buffer.empty()) {
-    db_conn_.insert(kTestCollection, buffer);
+    db_conn_->insert(kTestCollection, buffer);
   }
   return Status::OK;
 }
@@ -83,7 +88,7 @@ Status MongoDBDriver::insert(const RecordVector& records) {
     auto update = BSON("$set"
         << BSON(std::get<1>(record) << static_cast<int>(std::get<2>(record))));
     // Can not batch update MongoDB?
-    db_conn_.update(kTestCollection, query, update);
+    db_conn_->update(kTestCollection, query, update);
   }
   return Status::OK;
 }
@@ -101,7 +106,7 @@ Status MongoDBDriver::search(const ComplexQuery& query,
                            << mongo::LT << std::stoi(range->upper));
     b.appendElements(bson_query);
   }
-  auto cursor = db_conn_.query(kTestCollection, b.obj());
+  auto cursor = db_conn_->query(kTestCollection, b.obj());
   while (cursor->more()) {
     auto result = cursor->next();
     VLOG(1) << "File: " << result.getStringField("file");
@@ -111,7 +116,7 @@ Status MongoDBDriver::search(const ComplexQuery& query,
 }
 
 Status MongoDBDriver::clear() {
-  db_conn_.dropCollection(kTestCollection);
+  db_conn_->dropCollection(kTestCollection);
   return Status::OK;
 }
 
