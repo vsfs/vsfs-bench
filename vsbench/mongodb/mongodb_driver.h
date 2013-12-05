@@ -39,7 +39,7 @@ class MongoDBDriver : public Driver {
  public:
   MongoDBDriver();
 
-  virtual ~MongoDBDriver() {}
+  virtual ~MongoDBDriver();
 
   Status init();
 
@@ -58,7 +58,7 @@ class MongoDBDriver : public Driver {
   Status clear();
 
  private:
-  unique_ptr<mongo::DBClientConnection> db_conn_;
+  unique_ptr<mongodb::DBClientConnection> db_conn_;
 };
 
 }  // namespace vsbench

@@ -38,6 +38,9 @@ MongoDBDriver::MongoDBDriver() {
   db_conn_.reset(new mongo::DBClientConnection);
 }
 
+MongoDBDriver::~MongoDBDriver() {
+}
+
 Status MongoDBDriver::init() {
   auto status = connect();
   if (!status.ok()) {

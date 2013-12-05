@@ -7,7 +7,8 @@ CXX=mpic++
 MPI_COMPILE_FLAGS = $(shell mpicc --showme:compile)
 MPI_LINK_FLAGS = $(shell mpicc --showme:link)
 
-AM_CPPFLAGS = $(libthrift_CFLAGS) $(MYSQL_CFLAGS) -I$(top_srcdir)/lib/vobla \
+AM_CPPFLAGS = $(libthrift_CFLAGS) $(MYSQL_CFLAGS) \
+	      -I$(top_srcdir)/lib/vobla \
 	      -I${top_srcdir}/lib/vsfs \
 	      -I${top_srcdir}/lib/vsfs/lib/gmock-1.6.0/gtest/include \
 	      $(MPI_COMPILE_FLAGS)
@@ -26,15 +27,15 @@ LDADD = \
   ${BOOST_THREAD_LIB} \
   ${libthrift_LIBS} -lmpi_cxx
 
-SUBDIRS =
+noinst_LIBRARIES = libvsfs-vsbench.a
+SUBDIRS = vsbench/vsfs
+noinst_PROGRAMS = bin/vsbench
 
 libvsfs_vsbench_a_SOURCES = \
   vsbench/driver.cpp \
   vsbench/driver.h \
   vsbench/util.cpp \
-  vsbench/util.h \
-  vsbench/vsfs/vsfs_driver.cpp \
-  vsbench/vsfs/vsfs_driver.h
+  vsbench/util.h
 
 if TEST_HADOOP
 SUBDIRS += vsbench/hadoop
@@ -47,6 +48,7 @@ libvsfs_vsbench_a_SOURCES += \
   vsbench/hadoop/hbase/Hbase_types.h \
   vsbench/hadoop/hbase_driver.cpp \
   vsbench/hadoop/hbase_driver.h
+noinst_PROGRAMS += vsbench/hadoop/hbase_testtool
 vsbench_hadoop_hbase_testtool_SOURCES = vsbench/hadoop/hbase_testtool.cpp
 endif
 
@@ -66,13 +68,10 @@ LDADD += \
   ${top_srcdir}/vsbench/voltdb/voltdb-client-cpp-linux-x86_64-3.0/libevent_pthreads.a
 endif
 
-noinst_LIBRARIES = libvsfs-vsbench.a
+if TEST_MYSQL
 libvsfs_vsbench_a_SOURCES += \
   vsbench/mysql/mysql_driver.cpp \
   vsbench/mysql/mysql_driver.h
-
-noinst_PROGRAMS = \
-  bin/vsbench \
-  vsbench/hadoop/hbase_testtool
+endif
 
 bin_vsbench_SOURCES = vsbench/vsbench.cpp

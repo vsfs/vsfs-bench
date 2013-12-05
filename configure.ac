@@ -67,5 +67,6 @@ AC_CONFIG_FILES([Makefile
 				 vsbench/hadoop/Makefile
 				 vsbench/mongodb/Makefile
 				 vsbench/voltdb/Makefile
+				 vsbench/vsfs/Makefile
 				 ])
 AC_OUTPUT

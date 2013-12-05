@@ -17,11 +17,11 @@
 #ifndef VSBENCH_MYSQL_MYSQL_DRIVER_H_
 #define VSBENCH_MYSQL_MYSQL_DRIVER_H_
 
-#include <mysql++/mysql++.h>
 #include <list>
 #include <string>
 #include <tuple>  // NOLINT
 #include <utility>
+#include <memory>
 #include <vector>
 #include "vobla/status.h"
 #include "vsbench/driver.h"
@@ -29,8 +29,13 @@
 using std::pair;
 using std::string;
 using std::tuple;
+using std::unique_ptr;
 using std::vector;
 using vobla::Status;
+
+namespace mysqlpp {
+class Connection;
+}
 
 namespace vsfs {
 namespace vsbench {
@@ -80,7 +85,7 @@ class MySQLDriver : public Driver {
   string server_;
   string user_;
   string password_;
-  mysqlpp::Connection conn_;
+  unique_ptr<mysqlpp::Connection> conn_;
 };
 
 /**
