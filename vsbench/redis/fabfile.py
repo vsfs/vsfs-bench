@@ -25,7 +25,7 @@ sys.path.append('../..')
 from vsbench.fablib import base_dir, download_tarball, run_background
 
 
-URL = 'http://redis.googlecode.com/files/redis-2.8.2.tar.gz'
+URL = 'http://download.redis.io/releases/redis-2.8.2.tar.gz'
 
 @task
 def download():
