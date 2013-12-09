@@ -1,5 +1,5 @@
-vsfs-perf
-=========
+VSFS Benchmark suite
+=====================
 
 Performance test tools for VSFS
 
