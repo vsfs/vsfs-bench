@@ -22,21 +22,24 @@
 #include <vector>
 #include "vobla/status.h"
 #include "vsbench/driver.h"
-#include "mongo/client/dbclient.h"
 
 using std::string;
 using std::unique_ptr;
 using std::vector;
 using vobla::Status;
 
+namespace mongodb {
+class DBClientConnection;
+}
+
 namespace vsfs {
 namespace vsbench {
 
 class MongoDBDriver : public Driver {
  public:
-  MongoDBDriver() = default;
+  MongoDBDriver();
 
-  virtual ~MongoDBDriver() {}
+  virtual ~MongoDBDriver();
 
   Status init();
 
@@ -55,7 +58,7 @@ class MongoDBDriver : public Driver {
   Status clear();
 
  private:
-  mongo::DBClientConnection db_conn_;
+  unique_ptr<mongodb::DBClientConnection> db_conn_;
 };
 
 }  // namespace vsbench

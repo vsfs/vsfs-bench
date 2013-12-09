@@ -17,6 +17,7 @@
 #include <boost/filesystem.hpp>
 #include <gflags/gflags.h>
 #include <glog/logging.h>
+#include <mysql++/mysql++.h>
 #include <sys/time.h>
 #include <unistd.h>
 #include <algorithm>
@@ -64,6 +65,7 @@ void MySQLDriver::create_database() {
 
 MySQLDriver::MySQLDriver() : db_(FLAGS_mysql_db), server_(FLAGS_mysql_host),
     user_(FLAGS_mysql_user), password_(FLAGS_mysql_password) {
+  conn_.reset(new mysqlpp::Connection);
 }
 
 MySQLDriver::MySQLDriver(const string &db, const string &server,
@@ -78,11 +80,11 @@ Status MySQLDriver::connect() {
   int retry = 20;
   while (retry) {
     try {
-      if (conn_.connect(db_.c_str(), server_.c_str(), user_.c_str(),
+      if (conn_->connect(db_.c_str(), server_.c_str(), user_.c_str(),
                         password_.c_str())) {
         mysqlpp::MultiStatementsOption* opt =
             new mysqlpp::MultiStatementsOption(true);
-        conn_.set_option(opt);
+        conn_->set_option(opt);
         return Status::OK;
       };
     } catch (...) {  // NOLINT
@@ -93,17 +95,17 @@ Status MySQLDriver::connect() {
     retry--;
   }
   string error_message("Failed to connect to MySQL: ");
-  error_message += conn_.error();
+  error_message += conn_->error();
   return Status(-1, error_message);
 }
 
 Status MySQLDriver::init() {
-  if (!conn_.connect("", server_.c_str(), user_.c_str(), password_.c_str())) {
+  if (!conn_->connect("", server_.c_str(), user_.c_str(), password_.c_str())) {
     return Status(-1, "Failed to connect MySQL");
   }
   clear();
-  conn_.create_db(db_.c_str());
-  mysqlpp::Query query = conn_.query();
+  conn_->create_db(db_.c_str());
+  mysqlpp::Query query = conn_->query();
   query << "use " << db_;
   query.execute();
   query << "CREATE TABLE IF NOT EXISTS " << kMetaTableName << " ("
@@ -167,7 +169,7 @@ string query_table_name(mysqlpp::Query *query, const string &file_path,
 Status MySQLDriver::create_index(const string &path, const string &name,
                                 int index_type, int key_type) {
   if (FLAGS_mysql_schema.empty() || FLAGS_mysql_schema == "normal") {
-    mysqlpp::Query query = conn_.query();
+    mysqlpp::Query query = conn_->query();
     query << "INSERT INTO " << kMetaTableName
         << " (path, name, index_type, key_type) VALUE"
         << " (\"" << path << "\", \"" << name << "\", " << index_type
@@ -188,7 +190,7 @@ Status MySQLDriver::create_index(const string &path, const string &name,
 }
 
 Status MySQLDriver::import(const vector<string> &files) {
-  mysqlpp::Query query = conn_.query();
+  mysqlpp::Query query = conn_->query();
   size_t i = 0;
   const size_t kSQLInsertBatch = 128;
   for (; i < files.size(); ++i) {
@@ -212,7 +214,7 @@ Status MySQLDriver::import(const vector<string> &files) {
 
 Status MySQLDriver::insert(const RecordVector& records) {
   if (FLAGS_mysql_schema.empty() || FLAGS_mysql_schema == "normal") {
-    mysqlpp::Query query = conn_.query();
+    mysqlpp::Query query = conn_->query();
     // map<string, vector<pair<uint64_t, uint64_t>>> table_buffer;
     map<string, vector<pair<uint64_t, string>>> table_buffer;
 
@@ -258,7 +260,7 @@ Status MySQLDriver::insert(const RecordVector& records) {
             trans->commit();
           }
           VLOG(1) << " new transaction. ";
-          trans.reset(new mysqlpp::Transaction(conn_));
+          trans.reset(new mysqlpp::Transaction(*conn_));
         }
         query << "INSERT INTO " << table_name << " VALUES ("
             << file_and_key.first << ", " << file_hash << ");";
@@ -275,7 +277,7 @@ Status MySQLDriver::insert(const RecordVector& records) {
 }
 
 Status MySQLDriver::insert_single_table(const RecordVector &records) {
-  mysqlpp::Query query = conn_.query();
+  mysqlpp::Query query = conn_->query();
   const size_t kSQLInsertBatch = 128;
   size_t i = 0;
   for (const auto& record : records) {
@@ -305,7 +307,7 @@ Status MySQLDriver::search(const ComplexQuery& cq, vector<string> *files) {
   CHECK_NOTNULL(files);
   Status status;
   string prefix = cq.root();
-  mysqlpp::Query query = conn_.query();
+  mysqlpp::Query query = conn_->query();
 
   auto index_names = cq.get_names_of_range_queries();
 
@@ -374,14 +376,14 @@ Status MySQLDriver::search(const ComplexQuery& cq, vector<string> *files) {
 }
 
 Status MySQLDriver::clear() {
-  mysqlpp::Query query = conn_.query();
+  mysqlpp::Query query = conn_->query();
   query << "DROP DATABASE IF EXISTS vsfs;";
   query.execute();
   return Status::OK;
 }
 
 void MySQLDriver::flush() {
-  mysqlpp::Query query = conn_.query();
+  mysqlpp::Query query = conn_->query();
   query << "FLUSH TABLES";
   query.execute();
 }
@@ -394,12 +396,12 @@ PartitionedMySQLDriver::~PartitionedMySQLDriver() {
 }
 
 Status PartitionedMySQLDriver::init() {
-  if (!conn_.connect("", server_.c_str(), user_.c_str(), password_.c_str())) {
+  if (!conn_->connect("", server_.c_str(), user_.c_str(), password_.c_str())) {
     return Status(-1, "Failed to connect MySQL");
   }
   clear();
-  conn_.create_db(db_.c_str());
-  mysqlpp::Query query = conn_.query();
+  conn_->create_db(db_.c_str());
+  mysqlpp::Query query = conn_->query();
   query << "use " << db_;
   query.execute();
 
@@ -422,7 +424,7 @@ Status PartitionedMySQLDriver::init() {
 Status PartitionedMySQLDriver::create_index(
     const string &path, const string &name,
     int index_type, int key_type) {
-  mysqlpp::Query query = conn_.query();
+  mysqlpp::Query query = conn_->query();
   query << "INSERT INTO " << kMetaTableName
       << " (path, name, index_type, key_type) VALUE"
       << " (\"" << path << "\", \"" << name << "\", " << index_type

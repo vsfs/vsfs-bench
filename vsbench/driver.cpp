@@ -18,6 +18,7 @@
 #include <glog/logging.h>
 #include <algorithm>
 #include <string>
+#include "../config.h"
 #include "vsbench/driver.h"
 #include "vsbench/hadoop/hbase_driver.h"
 #include "vsbench/mongodb/mongodb_driver.h"
@@ -32,17 +33,29 @@ namespace vsfs {
 namespace vsbench {
 
 Driver* Driver::create_driver(const string &name) {
+  if (name == "vsfs") {
+    return new VsfsDriver();
+  }
+#if HAVE_HADOOP
   if (name == "hbase") {
     return new HbaseDriver();
-  } else if (name == "mysql") {
+  }
+#endif
+#if HAVE_MYSQL
+  if (name == "mysql") {
     return new MySQLDriver();
-  } else if (name == "vsfs") {
-    return new VsfsDriver();
-  } else if (name == "mongodb") {
+  }
+#endif
+#if HAVE_MONGODB
+  if (name == "mongodb") {
     return new MongoDBDriver();
-  } else if (name == "voltdb") {
+  }
+#endif
+#if HAVE_VOLTDB
+  if (name == "voltdb") {
     return new VoltDBDriver();
   }
+#endif
   return nullptr;
 }
 
