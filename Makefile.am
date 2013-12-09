@@ -17,13 +17,14 @@ AM_LDFLAGS = $(MPI_LINK_FLAGS)
 
 LDADD = \
   libvsfs-vsbench.a \
+  ${top_srcdir}/vsbench/vsfs/libvsbench-vsfs.a \
   ${top_srcdir}/lib/vsfs/vsfs/client/libvsfs-client.a \
   ${top_srcdir}/lib/vsfs/vsfs/index/libvsfs-index.a \
   ${top_srcdir}/lib/vsfs/vsfs/rpc/libvsfs-rpc.a \
   ${top_srcdir}/lib/vsfs/vsfs/common/libvsfs-common.a \
   ${top_srcdir}/lib/vsfs/lib/vobla/vobla/libvobla.la \
   -lboost_thread \
-  ${MYSQLPP_LIBS} ${BOOST_FILESYSTEM_LIB} ${BOOST_SYSTEM_LIB} \
+  ${BOOST_FILESYSTEM_LIB} ${BOOST_SYSTEM_LIB} \
   ${BOOST_THREAD_LIB} \
   ${libthrift_LIBS} -lmpi_cxx
 
@@ -69,9 +70,8 @@ LDADD += \
 endif
 
 if TEST_MYSQL
-libvsfs_vsbench_a_SOURCES += \
-  vsbench/mysql/mysql_driver.cpp \
-  vsbench/mysql/mysql_driver.h
+SUBDIRS += vsbench/mysql
+LDADD += ${top_srcdir}/vsbench/mysql/libvsbench-mysql.a $(MYSQLPP_LIBS)
 endif
 
 bin_vsbench_SOURCES = vsbench/vsbench.cpp

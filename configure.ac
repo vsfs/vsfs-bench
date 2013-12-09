@@ -17,19 +17,23 @@ AC_LANG([C++])
 AC_PROG_CPP
 
 AC_ARG_ENABLE([hadoop],
-	      AS_HELP_STRING([--enable-hadoop], [enable hadoop tests]))
+	      AS_HELP_STRING([--enable-hadoop], [enable hadoop tests]),
+		  AC_DEFINE([HAVE_HADOOP], [1], [Define if enable hadoop tests.]))
 AM_CONDITIONAL([TEST_HADOOP], [test x"$enable_hadoop" = "xyes"])
 
 AC_ARG_ENABLE([mongodb],
-	      AS_HELP_STRING([--enable-mongodb], [enable mongodb tests]))
+			  AS_HELP_STRING([--enable-mongodb], [enable mongodb tests]),
+			  AC_DEFINE([HAVE_MONGODB], [1], [Define if enable mongodb tests.]))
 AM_CONDITIONAL([TEST_MONGODB], [test x"$enable_mongodb" = "xyes"])
 
 AC_ARG_ENABLE([mysql],
-	      AS_HELP_STRING([--enable-mysql], [enable mysql tests]))
+			  AS_HELP_STRING([--enable-mysql], [enable mysql tests]),
+			  AC_DEFINE([HAVE_MYSQL], [1], [Define if enable mysql tests.]))
 AM_CONDITIONAL([TEST_MYSQL], [test x"$enable_mysql" = "xyes"])
 
 AC_ARG_ENABLE([voltdb],
-	      AS_HELP_STRING([--enable-voltdb], [enable voltdb tests]))
+			  AS_HELP_STRING([--enable-voltdb], [enable voltdb tests]),
+			  AC_DEFINE([HAVE_VOLTDB], [1], [Define if enable voltdb tests.]))
 AM_CONDITIONAL([TEST_VOLTDB], [test x"$enable_voltdb" = "xyes"])
 
 # Checks for libraries.
@@ -66,6 +70,7 @@ AC_CONFIG_FILES([Makefile
 				 apps/mvd/Makefile
 				 vsbench/hadoop/Makefile
 				 vsbench/mongodb/Makefile
+				 vsbench/mysql/Makefile
 				 vsbench/voltdb/Makefile
 				 vsbench/vsfs/Makefile
 				 ])

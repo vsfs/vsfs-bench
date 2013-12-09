@@ -260,7 +260,7 @@ Status MySQLDriver::insert(const RecordVector& records) {
             trans->commit();
           }
           VLOG(1) << " new transaction. ";
-          trans.reset(new mysqlpp::Transaction(conn_));
+          trans.reset(new mysqlpp::Transaction(*conn_));
         }
         query << "INSERT INTO " << table_name << " VALUES ("
             << file_and_key.first << ", " << file_hash << ");";
