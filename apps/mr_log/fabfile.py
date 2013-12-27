@@ -55,69 +55,6 @@ def download_traces():
 
 
 @task
-def gen_input(**kwargs):
-    """Generate input dataset statistically.
-
-    Optional parameters:
-    @param zipf The alpha value for zipf distribution.
-    @param error error possibility
-    @param events_per_second How many events recorded for one second.
-    @param days
-    """
-    zipf_a = float(kwargs.get('zipf', 1.5))
-    # Error possibility
-    error_poss = float(kwargs.get('errors', 0.05))   # 5% of error possiblity
-#    days = int(kwargs.get('days', 365))
-    events_per_second = int(kwargs.get('events_per_second', 10))
-
-    # Assume we have 5 individual components which fail indipendently.
-    COMPONENTS = ['WEB', 'MYSQL', 'QUEUE', 'NETWORK', 'BALANCER']
-    zipf_dist = {}
-    for comp in COMPONENTS:
-        zipf_dist[comp] = np.random.zipf(zipf_a, 365 * 24)
-        random.shuffle(zipf_dist[comp])
-
-    if os.path.exists(INPUT_DIR):
-        shutil.rmtree(INPUT_DIR)
-    os.makedirs(INPUT_DIR)
-
-    logname_format = 'log_%d.%02d.%02d.%02d.txt'  # log_YEAR.MONTH.DAY.HOUR.txt
-
-    date = datetime.date(2013, 1, 1)
-    delta = datetime.timedelta(1)  # one day
-    hours = 0
-    while date.year == 2013 and date.month == 1:
-        for hr in range(24):
-            logfile = logname_format % (date.year, date.month, date.day, hr)
-            comps_possibilities = \
-                map(float, [zipf_dist[c][hours] for c in COMPONENTS])
-            error_poss_array = np.cumsum(comps_possibilities)
-            error_poss_array /= float(error_poss_array[-1])
-            hours += 1
-            # Generates log for one hour.
-            with open(os.path.join(INPUT_DIR, logfile), 'w') as fobj:
-                for i in range(3600 * events_per_second):
-                    poss = random.random()
-                    if poss <= error_poss:
-                        poss /= error_poss
-                        idx = 0
-                        comp = None
-                        while True:
-                            if poss <= error_poss_array[idx]:
-                                comp = COMPONENTS[idx]
-                                break
-                            idx += 1
-
-                        error_line = \
-                            '[ERROR][%s] Has an error to figure out...\n' % \
-                            comp
-                        fobj.write(error_line)
-                    else:
-                        fobj.write('[OK] Another successful event.\n')
-        date += delta
-
-
-@task
 @roles('head')
 def start():
     """Starts a VSFS cluster and Hadoop cluster.
