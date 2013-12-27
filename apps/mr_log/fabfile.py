@@ -43,7 +43,7 @@ BASE_DIR = os.path.join(SCRIPT_DIR, 'testdata/base')
 TRITON_SORT_URL = 'http://www.macesystems.org/wp-uploads/2012/04/' \
                   'tritonsort_log_with_bad_node.tar.bz2'
 
-__all__ = ['start', 'stop', 'gen_input', 'index_inputs', 'download_traces',
+__all__ = ['start', 'stop', 'index_inputs', 'download_traces',
            'import_hive_data', 'parse_tritonsort_log', 'test_query_hive']
 
 
