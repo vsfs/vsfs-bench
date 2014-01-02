@@ -11,6 +11,7 @@ import boto
 from fabric.api import env, sudo, settings
 from fabric.colors import yellow
 import os
+import time
 
 INSTALL_SCRIPT = \
     'https://raw.github.com/vsfs/vsfs-devtools/master/install-devbox.sh'
@@ -18,9 +19,13 @@ INSTALL_SCRIPT = \
 
 class VsfsEC2:
     """Run VSFS on Amazon EC2
+
+    It requires that users define AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+    as environment variables.
     """
     EC2_REGION = 'us-east-1'
     EC2_AMI = 'ami-e325768a'  # Ubuntu 13.10 instance
+    EC2_KEY_FILE = '~/.ssh/ec2.pem'
     EC2_SECURITY_GROUPS = ['quick-start-1']
     EC2_USER = "ubuntu"
 
@@ -29,9 +34,12 @@ class VsfsEC2:
         self.region = kwargs.get('region', self.EC2_REGION)
         self.ami = kwargs.get('ami', self.EC2_AMI)
         self.user = kwargs.get('user', self.EC2_USER)
+        self.security_groups = kwargs.get('security_groups',
+                                          self.EC2_SECURITY_GROUPS)
 
         self.aws_access_key_id = os.environ.get('AWS_ACCESS_KEY_ID')
         self.aws_secret_access_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
+        self.aws_key_file = os.environ.get('AWS_KEY_FILE', self.EC2_KEY_FILE)
 
         self.conn = boto.ec2.connect_to_region(
             self.region, aws_access_key_id=self.aws_access_key_id,
@@ -45,7 +53,10 @@ class VsfsEC2:
         """
         print(yellow("Create a new instance."))
 
-        self.conn.run_instances(self.ami, instance_type='m1.small')
+        self.conn.run_instances(self.ami, instance_type='m1.small',
+                                security_groups=self.security_groups,
+                                key_name='eddy')
+
         reservation = self.conn.get_all_instances()
         print(reservation)
 
@@ -59,12 +70,12 @@ class VsfsEC2:
             instance = instances[0]
             while instance.state == 'pending':
                 print(yellow('Waitting for booting...'))
-                os.sleep(5)
+                time.sleep(5)
             print(instance, instance.state, instance.ip_address)
 
-            env.host_string = "%s@%s" % (self.user, instance.ip_address)
-            with settings(key_filename='~/eddy.pem'):
-                sudo('wget %s | sh' % INSTALL_SCRIPT)
+            env.host_string = "%s" % instance.ip_address
+            with settings(user='ubuntu', key_filename=self.aws_key_file):
+                sudo('wget %s -O- | sh' % INSTALL_SCRIPT, shell=True)
 
     def terminate_instance(self):
         pass
