@@ -19,7 +19,8 @@ git submodule init
 git submodule update
 
 if [ ! -d lib/vsfs ]; then
-	git clone https://github.com/vsfs/vsfs.git lib/vsfs
+#	git clone https://github.com/vsfs/vsfs.git lib/vsfs
+	git clone git@github.com:eddyxu/vsfs.git lib/vsfs
 else
 	cd lib/vsfs
 	git co master
