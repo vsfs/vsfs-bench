@@ -18,11 +18,8 @@
 from __future__ import print_function
 from fabric.api import task, local, cd, lcd, execute, run, roles, settings
 import csv
-import datetime
 import gzip
-import numpy as np
 import os
-import random
 import subprocess
 import multiprocessing as mp
 import shutil
