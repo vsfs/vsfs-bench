@@ -4,6 +4,7 @@
 
 1. Download traces `fab download_traces`
 1. Run `fab parse_tritonsort_log:N` to scale up the dataset for `N` times.
+ * `N=30` is generate about 18 GB Raw Data.
 
 To run the tests
 

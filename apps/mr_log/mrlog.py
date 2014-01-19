@@ -22,7 +22,7 @@ from subprocess import Popen, PIPE, call, check_output
 from multiprocessing import Pool
 
 SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
-VSFS_UTIL = os.path.join(SCRIPT_DIR, '../../lib/vsfs/vsfs/client/vsfs')
+VSFS_UTIL = os.path.join(SCRIPT_DIR, '../../lib/vsfs/vsfs/ui/cli/vsfs')
 
 
 def extract_features(args):
@@ -58,10 +58,10 @@ def extract_features(args):
 
 def run_index(args):
     feature, values = args
-    cmd = '%s index --create --name %s -k float -t btree /test' % \
+    cmd = '%s index create %s -k float -t btree /test %s' % \
             (VSFS_UTIL, feature)
     call(cmd, shell=True)
-    cmd = '%s index -s -n %s' % (VSFS_UTIL, feature)
+    cmd = '%s index insert -s n %s' % (VSFS_UTIL, feature)
     content = ""
     for csvfile, value in values.items():
         content += "/test/%s %s\n" % (csvfile, value)

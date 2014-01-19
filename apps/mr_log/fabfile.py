@@ -33,14 +33,14 @@ SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
 VSFS_DIR = os.path.abspath(SCRIPT_DIR + "/../../vsbench/vsfs")
 HADOOP_DIR = os.path.abspath(SCRIPT_DIR + "/../../vsbench/hadoop")
 INPUT_DIR = os.path.join(SCRIPT_DIR, 'testdata/input')
-VSFS_UTIL = os.path.join(SCRIPT_DIR, '../../lib/vsfs/vsfs/client/vsfs')
+VSFS_UTIL = os.path.join(SCRIPT_DIR, '../../lib/vsfs/vsfs/ui/cli/vsfs')
 MOUNT_DIR = os.path.join(SCRIPT_DIR, 'testdata/mnt')
 BASE_DIR = os.path.join(SCRIPT_DIR, 'testdata/base')
 
 TRITON_SORT_URL = 'http://www.macesystems.org/wp-uploads/2012/04/' \
                   'tritonsort_log_with_bad_node.tar.bz2'
 
-__all__ = ['start', 'stop', 'index_inputs', 'download_traces',
+__all__ = ['start', 'stop', 'index_inputs', 'download_traces', 'ps',
            'import_hive_data', 'parse_tritonsort_log', 'test_query_hive']
 
 
@@ -79,6 +79,18 @@ def stop():
         local('fab stop')
     with lcd(HADOOP_DIR):
         local('fab stop')
+
+
+@task
+def ps():
+    """List all related processes
+    """
+    with lcd(HADOOP_DIR):
+        local('Check hadoop liveness')
+        local('fab ps')
+    with lcd(VSFS_DIR):
+        local('Check vsfs liveness')
+        local('fab ps')
 
 
 def import_namespace():
@@ -209,6 +221,7 @@ SHOW INDEX ON log;
 
     with cd(SCRIPT_DIR):
         hadoop.run_hive("-f %s" % init_sql)
+
 
 
 @task
