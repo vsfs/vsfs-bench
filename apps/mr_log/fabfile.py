@@ -17,6 +17,7 @@
 
 from __future__ import print_function
 from fabric.api import task, local, cd, lcd, execute, run, roles, settings
+from fabric.api import parallel, env
 import csv
 import gzip
 import os
@@ -86,10 +87,10 @@ def ps():
     """List all related processes
     """
     with lcd(HADOOP_DIR):
-        local('Check hadoop liveness')
+        print('Check hadoop liveness')
         local('fab ps')
     with lcd(VSFS_DIR):
-        local('Check vsfs liveness')
+        print('Check vsfs liveness')
         local('fab ps')
 
 
@@ -166,6 +167,27 @@ def parse_tritonsort_log(**kwargs):
     pool.map(_parse_tritonsort_log, args)
 
 
+def _get_hadoop_csv_prefix(dirpath):
+    filenames = os.listdir(dirpath)
+    prefixes = { os.path.join(dirpath, fname.split('-')[0]) for fname in filenames }
+    print(prefixes)
+    return list(prefixes)
+
+@parallel
+def _hadoop_copy_from_local(prefixes):
+    """
+    """
+    idx = env.workers.index(env.host)
+    base = 0
+    while base + idx < len(prefixes):
+        prefix = prefixes[base + idx]
+        #print(prefix)
+        cmd = "{}/hadoop fs -copyFromLocal {}-* hdfs://{}/csv/".format(
+            hadoop.env['hadoop_bin'], prefix, hadoop.env['head']
+        )
+        run(cmd)
+        base += len(env.workers)
+
 @roles('head')
 @task
 def import_hive_data(**kwargs):
@@ -176,14 +198,19 @@ def import_hive_data(**kwargs):
     """
     do_create_index = kwargs.get('create_index', 1)
     csv_dir = os.path.join(SCRIPT_DIR, 'testdata/csv')
+
     with settings(warn_only=True):
         result = run("%(hadoop_bin)s/hadoop fs -test -d hdfs://%(head)s/csv" %
                      hadoop.env)
         if result.return_code == 0:
             run("%(hadoop_bin)s/hadoop fs -rmr hdfs://%(head)s/csv" %
                 hadoop.env)
-    run("%s/hadoop fs -copyFromLocal %s hdfs://%s/" %
-        (hadoop.env['hadoop_bin'], csv_dir, hadoop.env['head']))
+            run("%(hadoop_bin)s/hadoop fs -mkdir hdfs://%(head)s/csv" %
+                hadoop.env)
+
+    print(_get_hadoop_csv_prefix(csv_dir))
+    csv_prefixes = _get_hadoop_csv_prefix(csv_dir)
+    execute(_hadoop_copy_from_local, csv_prefixes, hosts=env.workers)
 
     # Initialize Hive SQL
     init_sql = os.path.join(SCRIPT_DIR, 'testdata/hive.sql')
