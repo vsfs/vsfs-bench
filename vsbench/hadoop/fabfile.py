@@ -430,3 +430,9 @@ def test_search(**kwargs):
                 result_file.write("%s %d\n" % (output, iteration))
                 result_file.flush()
                 os.fsync(result_file.fileno())
+
+@task
+def ps():
+    """Query the status of the test cluster.
+    """
+    fablib.ps('java')
