@@ -170,12 +170,6 @@ def stop():
         execute(stop_master, hosts=env.nodes)
 
 
-def _show_processes():
-    """ Show mysql process on remote machine.
-    """
-    run('ps aux | grep -E "indexd|masterd" | grep -v grep || true')
-
-
 @task
 def ps():
     """Prints the status of the running cluster processes.

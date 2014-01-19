@@ -145,9 +145,10 @@ def _parse_tritonsort_log(args):
 
 @task
 def parse_tritonsort_log(**kwargs):
-    """Parses Tritonsort Log and generate CSV (param:amplify=30)
+    """Parses Tritonsort Log and generate CSV (param:amplify=30,nprocs=4)
     """
     amplify_factor = int(kwargs.get('amplify', 30))
+    nprocs = int(kwargs.get('nprocs', 4))
     input_path = os.path.join(SCRIPT_DIR,
                               'tritonsort_log_with_bad_node/parsed')
     output_dir = os.path.join(SCRIPT_DIR, 'testdata/csv')
@@ -155,7 +156,7 @@ def parse_tritonsort_log(**kwargs):
         shutil.rmtree(output_dir)
     os.makedirs(output_dir)
 
-    pool = mp.Pool(4)
+    pool = mp.Pool(nprocs)
     args = []
     for parsed_log in os.listdir(input_path):
         filename = parsed_log.split('.')[0]
