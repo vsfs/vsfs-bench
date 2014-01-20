@@ -53,19 +53,23 @@ def extract_features(args):
     """
     subprocess_args = []
     for csvfile in os.listdir(args.csvdir):
-        path = os.path.join(args.csvdir, csvfile)
+        path = os.path.abspath(os.path.join(args.csvdir, csvfile))
+        if args.prefix and not path.startswith(args.prefix):
+            continue
         subprocess_args.append((path, args.threshold))
 
     pool = Pool()
     count = 0
-    with open('features.txt', 'w') as fobj:
-        for csvfile, max_values in pool.imap(extract_from_file,
-                                             subprocess_args):
-            for name, value in max_values.items():
-                fobj.write('%s %s %f\n' % (csvfile, name, value))
-            count += 1
-            if count % 50 == 0:
-                fobj.flush()
+    fobj = args.output
+    for csvfile, max_values in pool.imap(extract_from_file,
+                                         subprocess_args):
+        for name, value in max_values.items():
+            fobj.write('%s %s %f\n' % (csvfile, name, value))
+        count += 1
+        if count % 50 == 0:
+            print("Progress {} files...".format(count))
+            fobj.flush()
+    fobj.close()
 
 
 def run_index(args):
@@ -124,8 +128,14 @@ def main():
 
     parser_extract = subparsers.add_parser('extract')
     parser_extract.add_argument(
+        '-p', '--prefix', metavar='STR', default='',
+        help='Only extract the files that match the prefix')
+    parser_extract.add_argument(
         '-t', '--threshold', type=int, metavar='NUM', default=0,
         help='Sets the threshold to print filename')
+    parser_extract.add_argument(
+        '-o', '--output', metavar='FILE', default='extracts.txt',
+        type=argparse.FileType("w"))
     parser_extract.add_argument('csvdir')
     parser_extract.set_defaults(func=extract_features)
 

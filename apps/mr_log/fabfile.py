@@ -189,6 +189,7 @@ def _hadoop_copy_from_local(prefixes):
         run(cmd)
         base += len(env.workers)
 
+
 @roles('head')
 @task
 def import_hive_data(**kwargs):
@@ -267,6 +268,23 @@ def _test_query_origin_hive(threshold):
 def _test_query_hive_on_vsfs(threshold):
     pass
 
+@parallel
+def _extract_features(testdir, threshold):
+    with cd(SCRIPT_DIR):
+        prefixes = _get_hadoop_csv_prefix(testdir)
+        idx = env.workers.index(env.host)
+        base = 0
+        while base + idx < len(prefixes):
+            prefix = prefixes[base + idx]
+            print(prefix)
+            cmd = "{} extract -t {} -p {} -o {}/features/features-{}.txt " \
+                  "{}/testdata/csv".format(
+                      MRLOG, threshold, prefix, SCRIPT_DIR, env.host,
+                      SCRIPT_DIR)
+            run(cmd)
+
+            base += len(env.workers)
+
 @task
 @roles('head')
 def test_query_hive(threshold=1000000):
@@ -283,9 +301,9 @@ def test_query_hive(threshold=1000000):
 #                hadoop.env)
 
     with cd(SCRIPT_DIR):
-        cmd = "{} extract -t {} {}/testdata/csv".format(
-            MRLOG, threshold, SCRIPT_DIR)
-        run(cmd)
+        run('rm -rf features && mkdir -p features')
+    execute(_extract_features, '{}/testdata/csv'.format(SCRIPT_DIR),
+            threshold, hosts=env.workers)
     return
 
     run("%(hadoop_bin)s/hadoop fs -mkdir hdfs://%(head)s/hivevsfs" %
