@@ -260,13 +260,12 @@ value > %d) t2 GROUP BY hour ORDER BY hrcount DESC LIMIT 3;
 
 @roles('head')
 def _test_query_origin_hive(threshold):
+    print("Running on Log")
     with cd(SCRIPT_DIR):
         hadoop.run_hive('-e "%s"' % (HIVE_SQL_TEMPLATE % ('log', threshold)))
-
-
-@roles('head')
-def _test_query_hive_on_vsfs(threshold):
-    pass
+    print("Running on Log without index.")
+    with cd(SCRIPT_DIR):
+        hadoop.run_hive('-e "%s"' % (HIVE_SQL_TEMPLATE % ('log_noidx', threshold)))
 
 @parallel
 def _extract_features(testdir, threshold):
@@ -276,7 +275,6 @@ def _extract_features(testdir, threshold):
         base = 0
         while base + idx < len(prefixes):
             prefix = prefixes[base + idx]
-            print(prefix)
             cmd = "{} extract -t {} -p {} -o {}/features/features-{}.txt " \
                   "{}/testdata/csv".format(
                       MRLOG, threshold, prefix, SCRIPT_DIR, env.host,
@@ -285,30 +283,44 @@ def _extract_features(testdir, threshold):
 
             base += len(env.workers)
 
+def prepare_hive_query_data(threshold=100000):
+    pass
+
 @task
 @roles('head')
 def test_query_hive(threshold=1000000):
+    """Run query results on Hive (param:threshold=1000000)
+    """
     threshold = int(threshold)
 
-    #execute(_test_query_origin_hive, threshold)
+    execute(_test_query_origin_hive, threshold)
 
     # Hive on VSFS
-#    with settings(warn_only=True):
-#        result = run("%(hadoop_bin)s/hadoop fs -test -d "
-#                     "hdfs://%(head)s/hivevsfs" % hadoop.env)
-#        if result.return_code == 0:
-#            run("%(hadoop_bin)s/hadoop fs -rmr hdfs://%(head)s/hivevsfs" %
-#                hadoop.env)
+    with settings(warn_only=True):
+        result = run("%(hadoop_bin)s/hadoop fs -test -d "
+                     "hdfs://%(head)s/hivevsfs" % hadoop.env)
+        if result.return_code == 0:
+            run("%(hadoop_bin)s/hadoop fs -rmr hdfs://%(head)s/hivevsfs" %
+                hadoop.env)
+    run("%(hadoop_bin)s/hadoop fs -mkdir hdfs://%(head)s/hivevsfs" %
+        hadoop.env)
 
     with cd(SCRIPT_DIR):
         run('rm -rf features && mkdir -p features')
     execute(_extract_features, '{}/testdata/csv'.format(SCRIPT_DIR),
             threshold, hosts=env.workers)
-    return
 
-    run("%(hadoop_bin)s/hadoop fs -mkdir hdfs://%(head)s/hivevsfs" %
-        hadoop.env)
-    for filename in map(str.strip, output.split('\n')):
+    desired_files = []
+    for filename in os.listdir('{}/features'.format(SCRIPT_DIR)):
+        file_path = os.path.join(SCRIPT_DIR, 'features', filename)
+        with open(file_path) as fobj:
+            for line in fobj:
+                fields = line.split()
+                if fields[1] == 'Writer_5_runtime' and \
+                    float(fields[2]) > threshold:
+                    desired_files.append(fields[0])
+
+    for filename in desired_files:
         if filename:
             run("%s/hadoop fs -cp hdfs://%s/csv/%s hdfs://%s/hivevsfs" %
                 (hadoop.env['hadoop_bin'], hadoop.env['head'], filename,
