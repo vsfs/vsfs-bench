@@ -20,4 +20,7 @@ hbase/Hbase.h: ${HBASE_DIR}/src/main/resources/org/apache/hadoop/hbase/thrift/Hb
 download:
 	if [ ! -d ${HBASE_DIR} ]; then fab download; fi
 
+Symlink.class: Symlink.java
+	javac -cp hadoop/hadoop-client-1.2.1.jar Symlink.java
+
 .PHONY: download

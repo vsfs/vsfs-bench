@@ -25,35 +25,47 @@ SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
 VSFS_UTIL = os.path.join(SCRIPT_DIR, '../../lib/vsfs/vsfs/ui/cli/vsfs')
 
 
+def extract_from_file(args):
+    filepath, threshold = args
+    csvfile = os.path.basename(filepath)
+    with open(filepath) as fobj:
+        #print("processing {}".format(filepath))
+        max_value = defaultdict(float)
+        for line in fobj:
+            line = line.strip()
+            fields = line.split(',')
+            if len(fields) < 5 or not fields[4]:
+                continue
+            name = fields[3]
+            value = float(fields[4])
+            max_value[name] = max(max_value[name], value)
+        if threshold:
+            if max_value['Writer_5_runtime'] >= threshold:
+                print(csvfile)
+        else:
+            if max_value['Writer_5_runtime'] > 0:
+                print(csvfile, max_value['Writer_5_runtime'])
+    return (csvfile, max_value)
+
+
 def extract_features(args):
     """Extract intersting features
     """
-    results = {}
+    subprocess_args = []
     for csvfile in os.listdir(args.csvdir):
         path = os.path.join(args.csvdir, csvfile)
-        with open(path) as fobj:
-            max_value = defaultdict(float)
-            for line in fobj:
-                line = line.strip()
-                fields = line.split(',')
-                if len(fields) < 5 or not fields[4]:
-                    continue
-                name = fields[3]
-                value = float(fields[4])
-                max_value[name] = max(max_value[name], value)
-            if args.threshold:
-                if max_value['Writer_5_runtime'] >= args.threshold:
-                    print(csvfile)
-            else:
-                if max_value['Writer_5_runtime'] > 0:
-                    print(csvfile, max_value['Writer_5_runtime'])
+        subprocess_args.append((path, args.threshold))
 
-        results[csvfile] = max_value
-
+    pool = Pool()
+    count = 0
     with open('features.txt', 'w') as fobj:
-        for csvfile, max_values in results.items():
+        for csvfile, max_values in pool.imap(extract_from_file,
+                                             subprocess_args):
             for name, value in max_values.items():
                 fobj.write('%s %s %f\n' % (csvfile, name, value))
+            count += 1
+            if count % 50 == 0:
+                fobj.flush()
 
 
 def run_index(args):

@@ -37,6 +37,7 @@ INPUT_DIR = os.path.join(SCRIPT_DIR, 'testdata/input')
 VSFS_UTIL = os.path.join(SCRIPT_DIR, '../../lib/vsfs/vsfs/ui/cli/vsfs')
 MOUNT_DIR = os.path.join(SCRIPT_DIR, 'testdata/mnt')
 BASE_DIR = os.path.join(SCRIPT_DIR, 'testdata/base')
+MRLOG = os.path.join(SCRIPT_DIR, 'mrlog.py')
 
 TRITON_SORT_URL = 'http://www.macesystems.org/wp-uploads/2012/04/' \
                   'tritonsort_log_with_bad_node.tar.bz2'
@@ -251,30 +252,41 @@ SHOW INDEX ON log;
         hadoop.run_hive("-f %s" % init_sql)
 
 
+HIVE_SQL_TEMPLATE = """SELECT hour, count(hour) AS hrcount FROM
+(SELECT round(time / 60) AS hour FROM %s WHERE
+value > %d) t2 GROUP BY hour ORDER BY hrcount DESC LIMIT 3;
+"""
+
+@roles('head')
+def _test_query_origin_hive(threshold):
+    with cd(SCRIPT_DIR):
+        hadoop.run_hive('-e "%s"' % (HIVE_SQL_TEMPLATE % ('log', threshold)))
+
+
+@roles('head')
+def _test_query_hive_on_vsfs(threshold):
+    pass
 
 @task
 @roles('head')
 def test_query_hive(threshold=1000000):
     threshold = int(threshold)
-    sql_template = """EXPLAIN SELECT hour, count(hour) AS hrcount FROM
-(SELECT round(time / 60) AS hour FROM %s WHERE
-value > %d) t2 GROUP BY hour ORDER BY hrcount DESC LIMIT 3;
-"""
-    with cd(SCRIPT_DIR):
-        hadoop.run_hive('-e "%s"' % (sql_template % ('log', threshold)))
-        #hadoop.run_hive('-e "%s"' % (sql_template % ('log_noidx', threshold)))
-    return
-    # Hive on VSFS
-    with settings(warn_only=True):
-        result = run("%(hadoop_bin)s/hadoop fs -test -d "
-                     "hdfs://%(head)s/hivevsfs" % hadoop.env)
-        if result.return_code == 0:
-            run("%(hadoop_bin)s/hadoop fs -rmr hdfs://%(head)s/hivevsfs" %
-                hadoop.env)
 
-    output = subprocess.check_output(
-        [os.path.join(SCRIPT_DIR, 'mrlog.py'), 'extract', '-t',
-         str(threshold), os.path.join(SCRIPT_DIR, 'testdata/csv')])
+    #execute(_test_query_origin_hive, threshold)
+
+    # Hive on VSFS
+#    with settings(warn_only=True):
+#        result = run("%(hadoop_bin)s/hadoop fs -test -d "
+#                     "hdfs://%(head)s/hivevsfs" % hadoop.env)
+#        if result.return_code == 0:
+#            run("%(hadoop_bin)s/hadoop fs -rmr hdfs://%(head)s/hivevsfs" %
+#                hadoop.env)
+
+    with cd(SCRIPT_DIR):
+        cmd = "{} extract -t {} {}/testdata/csv".format(
+            MRLOG, threshold, SCRIPT_DIR)
+        run(cmd)
+    return
 
     run("%(hadoop_bin)s/hadoop fs -mkdir hdfs://%(head)s/hivevsfs" %
         hadoop.env)
@@ -287,7 +299,7 @@ value > %d) t2 GROUP BY hour ORDER BY hrcount DESC LIMIT 3;
     sql_create_vsfs_table = """
 DROP TABLE IF EXISTS vsfs;
 CREATE EXTERNAL TABLE vsfs (time double, type string, event string,
-value_name string, value double )
+value_name string, value double)
 COMMENT 'Hive On Vsfs'
 ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
 LOCATION 'hdfs://%(head)s/hivevsfs';
@@ -295,4 +307,4 @@ LOCATION 'hdfs://%(head)s/hivevsfs';
     hadoop.run_hive('-e "%s"' % sql_create_vsfs_table)
 
     with cd(SCRIPT_DIR):
-        hadoop.run_hive('-e "%s"' % (sql_template % ('vsfs', threshold)))
+        hadoop.run_hive('-e "%s"' % (HIVE_SQL_TEMPLATE % ('vsfs', threshold)))
