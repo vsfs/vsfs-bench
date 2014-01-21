@@ -150,7 +150,6 @@ def parse_tritonsort_log(**kwargs):
     """
     amplify_factor = int(kwargs.get('amplify', 30))
     seconds = int(kwargs.get('seconds', 10))  # seconds per file.
-    nprocs = int(kwargs.get('nprocs', 4))
     input_path = os.path.join(SCRIPT_DIR,
                               'tritonsort_log_with_bad_node/parsed')
     output_dir = os.path.join(SCRIPT_DIR, 'testdata/csv-x{}-{}s'.format(
@@ -159,7 +158,7 @@ def parse_tritonsort_log(**kwargs):
         shutil.rmtree(output_dir)
     os.makedirs(output_dir)
 
-    pool = mp.Pool(nprocs)
+    pool = mp.Pool()
     args = []
     for parsed_log in os.listdir(input_path):
         filename = parsed_log.split('.')[0]
@@ -172,7 +171,7 @@ def parse_tritonsort_log(**kwargs):
 def _get_hadoop_csv_prefix(dirpath):
     filenames = os.listdir(dirpath)
     prefixes = { os.path.join(dirpath, fname.split('-')[0]) for fname in filenames }
-    print(prefixes)
+    #print(prefixes)
     return list(prefixes)
 
 @parallel
@@ -193,14 +192,14 @@ def _hadoop_copy_from_local(prefixes):
 
 @roles('head')
 @task
-def import_hive_data(**kwargs):
-    """Import dataset into Hive as external table (param:create_index=1)
+def import_hive_data(csvdir='csv', **kwargs):
+    """Import dataset into Hive as external table (param:csvdir='csv',create_index=1)
 
     Optional parameters:
     @param create_index=False
     """
     do_create_index = kwargs.get('create_index', 1)
-    csv_dir = os.path.join(SCRIPT_DIR, 'testdata/csv')
+    csv_dir = os.path.join(SCRIPT_DIR, 'testdata/%s' % csvdir)
 
     with settings(warn_only=True):
         result = run("%(hadoop_bin)s/hadoop fs -test -d hdfs://%(head)s/csv" %
@@ -208,10 +207,10 @@ def import_hive_data(**kwargs):
         if result.return_code == 0:
             run("%(hadoop_bin)s/hadoop fs -rmr hdfs://%(head)s/csv" %
                 hadoop.env)
-            run("%(hadoop_bin)s/hadoop fs -mkdir hdfs://%(head)s/csv" %
-                hadoop.env)
+        run("%(hadoop_bin)s/hadoop fs -mkdir hdfs://%(head)s/csv" %
+            hadoop.env)
 
-    print(_get_hadoop_csv_prefix(csv_dir))
+    #print(_get_hadoop_csv_prefix(csv_dir))
     csv_prefixes = _get_hadoop_csv_prefix(csv_dir)
     execute(_hadoop_copy_from_local, csv_prefixes, hosts=env.workers)
 
