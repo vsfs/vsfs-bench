@@ -114,8 +114,7 @@ def index_inputs():
 def _parse_tritonsort_log(args):
     """
     """
-    inpath, outpath, amplify_factor = args
-    print(inpath, outpath)
+    inpath, outpath, amplify_factor, seconds = args
     last_timestamp = None
     idx = 0
     with gzip.GzipFile(inpath) as logfile:
@@ -125,7 +124,7 @@ def _parse_tritonsort_log(args):
             fields = line.split()
             timestamp = float(fields[0])
             # One minute per file
-            if not last_timestamp or last_timestamp < timestamp - 1:
+            if not last_timestamp or last_timestamp < timestamp - seconds:
                 last_timestamp = timestamp
                 if outcsv:
                     outcsv.close()
@@ -147,13 +146,15 @@ def _parse_tritonsort_log(args):
 
 @task
 def parse_tritonsort_log(**kwargs):
-    """Parses Tritonsort Log and generate CSV (param:amplify=30,nprocs=4)
+    """Parses Tritonsort Log and generate CSV (param:amplify=30,nprocs=4,seconds=10)
     """
     amplify_factor = int(kwargs.get('amplify', 30))
+    seconds = int(kwargs.get('seconds', 10))  # seconds per file.
     nprocs = int(kwargs.get('nprocs', 4))
     input_path = os.path.join(SCRIPT_DIR,
                               'tritonsort_log_with_bad_node/parsed')
-    output_dir = os.path.join(SCRIPT_DIR, 'testdata/csv')
+    output_dir = os.path.join(SCRIPT_DIR, 'testdata/csv-x{}-{}s'.format(
+        amplify_factor, seconds))
     if os.path.exists(output_dir):
         shutil.rmtree(output_dir)
     os.makedirs(output_dir)
@@ -164,7 +165,7 @@ def parse_tritonsort_log(**kwargs):
         filename = parsed_log.split('.')[0]
         csvfile = os.path.join(output_dir, filename)
         args.append((os.path.join(input_path, parsed_log), csvfile,
-                     amplify_factor))
+                     amplify_factor, seconds))
     pool.map(_parse_tritonsort_log, args)
 
 
