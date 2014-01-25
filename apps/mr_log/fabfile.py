@@ -275,10 +275,10 @@ def _extract_features(testdir, threshold):
         base = 0
         while base + idx < len(prefixes):
             prefix = prefixes[base + idx]
-            cmd = "{} extract -t {} -p {} -o {}/features/features-{}.txt " \
-                  "{}/testdata/csv".format(
+            cmd = "{} extract -t {} -p {} -o {}/features/feature-{}.txt " \
+                  "{}".format(
                       MRLOG, threshold, prefix, SCRIPT_DIR, env.host,
-                      SCRIPT_DIR)
+                      testdir)
             run(cmd)
 
             base += len(env.workers)
@@ -288,13 +288,14 @@ def prepare_hive_query_data(threshold=100000):
 
 @task
 @roles('head')
-def test_query_hive(threshold=1000000):
+def test_query_hive(threshold=1000000, csv_dir='csv'):
     """Run query results on Hive (param:threshold=1000000)
     """
     threshold = int(threshold)
 
-    execute(_test_query_origin_hive, threshold)
+    #execute(_test_query_origin_hive, threshold)
 
+    data_dir = '{}/testdata/{}'.format(SCRIPT_DIR, csv_dir)
     # Hive on VSFS
     with settings(warn_only=True):
         result = run("%(hadoop_bin)s/hadoop fs -test -d "
@@ -307,24 +308,24 @@ def test_query_hive(threshold=1000000):
 
     with cd(SCRIPT_DIR):
         run('rm -rf features && mkdir -p features')
-    execute(_extract_features, '{}/testdata/csv'.format(SCRIPT_DIR),
-            threshold, hosts=env.workers)
+    with settings(warn_only=True):
+        execute(_extract_features, data_dir, threshold, hosts=env.workers)
 
     desired_files = []
-    for filename in os.listdir('{}/features'.format(SCRIPT_DIR)):
+    for filename in os.listdir('features'):
         file_path = os.path.join(SCRIPT_DIR, 'features', filename)
         with open(file_path) as fobj:
             for line in fobj:
                 fields = line.split()
+                print(fields)
                 if fields[1] == 'Writer_5_runtime' and \
                     float(fields[2]) > threshold:
                     desired_files.append(fields[0])
 
+    print("Desired files: ", desired_files)
     for filename in desired_files:
-        if filename:
-            run("%s/hadoop fs -cp hdfs://%s/csv/%s hdfs://%s/hivevsfs" %
-                (hadoop.env['hadoop_bin'], hadoop.env['head'], filename,
-                 hadoop.env['head']))
+        run("%s/hadoop fs -copyFromLocal %s/%s hdfs://%s/hivevsfs" %
+            (hadoop.env['hadoop_bin'], data_dir, filename, hadoop.env['head']))
 
     sql_create_vsfs_table = """
 DROP TABLE IF EXISTS vsfs;
